@@ -1,12 +1,12 @@
 import 'dotenv/config';
+
 import * as jwt from 'jsonwebtoken';
 
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { NextFunction, Request, Response } from 'express';
 
-// Extend Express Request to include user object
 interface ExtendedRequest extends Request {
-  user?: {
+  user: {
     userId: string;
     [key: string]: any;
   };
@@ -32,56 +32,37 @@ interface ExtendedRequest extends Request {
  * @class JWTMiddleware
  * @implements NestMiddleware
  */
+
 @Injectable()
 export class JWTMiddleware implements NestMiddleware {
+  /**
+   * Handles the middleware logic.
+   *
+   * @param {ExtendedRequest} req The Express request object, expected to have a custom type
+   * extending the standard `Request` with additional properties.
+   * @param {Response} res The Express response object.
+   * @param {NextFunction} next The next middleware function in the chain.
+   */
   use(req: ExtendedRequest, res: Response, next: NextFunction) {
+    // Try to get token from cookies first
     let token = req.cookies?.auth_token;
-
-    console.log(
-      '[JWTMiddleware] Token from cookies:',
-      token ? '✅ Found' : '❌ Not found',
-    );
-
-    // If no token in cookies, try Authorization header
-    if (!token) {
-      const authHeader = req.headers.authorization;
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-        token = authHeader.substring(7); // Remove 'Bearer ' prefix
-        console.log(
-          '[JWTMiddleware] Token from header:',
-          token ? '✅ Found' : '❌ Not found',
-        );
-      }
-    }
 
     if (token) {
       try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY!);
+        const decoded = jwt.verify(token, 'fatima-marketing-rehan');
 
-        // Ensure decoded is an object and has at least one identifier field
+        // Ensure decoded is an object with an 'id' property
         if (
           typeof decoded === 'object' &&
           ('id' in decoded || 'sub' in decoded)
         ) {
           req.user = {
             userId: decoded.id || decoded.sub,
-            ...decoded, // Spread all other properties
           };
-          console.log('[JWTMiddleware] User attached to request:', req.user);
-        } else {
-          console.warn(
-            '[JWTMiddleware] Token payload missing required fields (id or sub)',
-          );
         }
       } catch (error) {
-        console.error(
-          '[JWTMiddleware] Error decoding token:',
-          error.message || error,
-        );
-        // Optionally, you could set req.user = null or leave it undefined
+        console.error('Error decoding token', error);
       }
-    } else {
-      console.log('[JWTMiddleware] No token found. Proceeding without user.');
     }
 
     next();

@@ -5,13 +5,14 @@ import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import * as express from 'express';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bodyParser: false });
 
   // Enable Cross-Origin Resource Sharing (CORS)
   app.enableCors({
-    origin: '*',
+    origin: ['http://localhost:3000'],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
@@ -43,9 +44,10 @@ async function bootstrap() {
     express.raw({ type: 'application/json' }),
   );
 
-  // Apply custom body parsers (json and urlencoded)
-  app.use(json({ limit: '50mb' }));
-  app.use(urlencoded({ limit: '50mb', extended: true }));
+  // ✅ CORRECT ORDER
+  app.use(cookieParser()); // FIRST - Must parse cookies before anything else
+  app.use(json()); // THEN - Parse JSON bodies
+  app.use(urlencoded()); // THEN - Parse URL-encoded bodies
 
   // Start the application on port 8080
   await app.listen(8080);

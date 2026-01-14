@@ -1,17 +1,22 @@
-import 'dotenv/config';
 import * as bcrypt from 'bcrypt';
+import 'dotenv/config';
 
 import {
-    BadRequestException,
-    ConflictException,
-    Injectable,
-    InternalServerErrorException,
-    NotFoundException,
-    UnauthorizedException,
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
-import { LoginUserDto, RegisterUserDto } from 'src/DTOs';
 import { JwtService } from '@nestjs/jwt';
 import { Model } from 'mongoose';
+import {
+  LoginUserDto,
+  RegisterAdminDto,
+  RegisterSalesOfficerDto,
+  RegisterUserDto,
+} from 'src/DTOs';
 import { DatabaseProvider } from 'src/provider/DatabaseProvider';
 import { User, UserDocument, UserSchema } from 'src/schemas';
 
@@ -36,20 +41,6 @@ export class UserService {
     const { email, password } = registerUserDto;
 
     try {
-      // Validate that the email is a business email
-      const genericEmailDomains = [
-        'gmail.com',
-        'yahoo.com',
-        'hotmail.com',
-        'outlook.com',
-      ];
-      const emailDomain = email.split('@')[1];
-      if (genericEmailDomains.includes(emailDomain)) {
-        throw new BadRequestException(
-          'Only business emails are allowed for registration.',
-        );
-      }
-
       // Check if the user already exists
       const existingUser = await this.userModel
         .findOne({ email: { $eq: email } })
@@ -60,7 +51,7 @@ export class UserService {
       }
 
       // Hash the password
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const hashedPassword = await bcrypt.hash(password as string, 10);
 
       // Create the user
       const newUser = new this.userModel({
@@ -91,6 +82,162 @@ export class UserService {
   }
 
   /**
+   * Registers a new user in the database.
+   * @param registerAdminDto - Data transfer object containing user registration data.
+   * @returns The registered user's data (excluding the password).
+   */
+  async registerAdmin(
+    userId: string,
+    registerAdminDto: RegisterAdminDto,
+  ): Promise<any> {
+    const { email, full_name, password } = registerAdminDto;
+    const foundUser = await this.userModel
+      .findById(userId)
+      .select('-password')
+      .exec();
+
+    if (!foundUser) {
+      throw new NotFoundException('Super Admin Not found!');
+    }
+
+    if (foundUser.role?.role_type !== 'super_admin') {
+      throw new UnauthorizedException('Only Super Admin can register Admin');
+    }
+
+    // 🔒 Validate required fields
+    if (!email) {
+      throw new BadRequestException('Email is required');
+    }
+
+    if (
+      !full_name ||
+      typeof full_name !== 'string' ||
+      full_name.trim() === ''
+    ) {
+      throw new BadRequestException('Full name is required');
+    }
+
+    try {
+      const existingUser = await this.userModel
+        .findOne({ email: { $eq: email } })
+        .exec();
+
+      if (existingUser) {
+        throw new ConflictException('A user with this email already exists.');
+      }
+
+      const createdBy = {
+        id: foundUser._id,
+        email: foundUser.email,
+        role: foundUser.role,
+      };
+
+      const newUser = new this.userModel({
+        ...registerAdminDto,
+        password: password as string,
+        created_by: createdBy,
+      });
+
+      const savedUser = await newUser.save();
+
+      return {
+        ...savedUser.toObject(),
+        password,
+      };
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof ConflictException
+      ) {
+        throw error;
+      }
+
+      console.error('Error while registering user:', error);
+      throw new InternalServerErrorException(
+        'An unexpected error occurred while registering the user.',
+      );
+    }
+  }
+
+  /**
+   * Registers a new user in the database.
+   * @param registerSalesOfficerDto - Data transfer object containing user registration data.
+   * @returns The registered user's data (excluding the password).
+   */
+  async registerSalesOfficer(
+    userId: string,
+    registerSalesOfficerDto: RegisterSalesOfficerDto,
+  ): Promise<any> {
+    const { email, full_name, password } = registerSalesOfficerDto;
+
+    const foundUser = await this.userModel
+      .findById(userId)
+      .select('-password')
+      .exec();
+
+    if (!foundUser) {
+      throw new NotFoundException('Super Admin Not found!');
+    }
+
+    if (foundUser.role?.role_type !== 'super_admin') {
+      throw new UnauthorizedException('Only Super Admin can register Admin');
+    }
+
+    if (!email) {
+      throw new BadRequestException('Email is required');
+    }
+
+    if (
+      !full_name ||
+      typeof full_name !== 'string' ||
+      full_name.trim() === ''
+    ) {
+      throw new BadRequestException('Full name is required');
+    }
+
+    try {
+      const existingUser = await this.userModel
+        .findOne({ email: { $eq: email } })
+        .exec();
+
+      if (existingUser) {
+        throw new ConflictException('A user with this email already exists.');
+      }
+
+      const createdBy = {
+        id: foundUser._id,
+        email: foundUser.email,
+        role: foundUser.role,
+      };
+
+      const newUser = new this.userModel({
+        ...registerSalesOfficerDto,
+        password: password as string,
+        created_by: createdBy,
+      });
+
+      const savedUser = await newUser.save();
+
+      return {
+        ...savedUser.toObject(),
+        password,
+      };
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof ConflictException
+      ) {
+        throw error;
+      }
+
+      console.error('Error while registering user:', error);
+      throw new InternalServerErrorException(
+        'An unexpected error occurred while registering the user.',
+      );
+    }
+  }
+
+  /**
    * Logs in a user by verifying their credentials.
    * @param loginUserDto - Data transfer object containing user login data.
    * @returns A JWT token if the login is successful.
@@ -101,18 +248,6 @@ export class UserService {
     const { email, password, rememberMe } = loginUserDto;
 
     try {
-      // Validate that the email is a business email
-    //   const genericEmailDomains = [
-    //     'gmail.com',
-    //     'yahoo.com',
-    //     'hotmail.com',
-    //     'outlook.com',
-    //   ];
-    //   const emailDomain = email.split('@')[1];
-    //   if (genericEmailDomains.includes(emailDomain)) {
-    //     throw new BadRequestException('Please use a business email to log in.');
-    //   }
-
       // Find the user by email
       const user = await this.userModel
         .findOne({ email: { $eq: email } })
@@ -140,12 +275,14 @@ export class UserService {
 
       // Generate a JWT token
       const payload = {
+        id: user._id.toString(), // ✅ string
+        sub: user._id.toString(), // ✅ string
         email: user.email,
-        sub: user._id,
+        role: user.role?.role_type,
       };
 
       const accessToken = this.jwtService.sign(payload, {
-        secret: process.env.JWT_SECRET_KEY!,
+        secret: 'fatima-marketing-rehan',
         expiresIn: rememberMe ? '30d' : '1h',
       });
 
@@ -239,8 +376,6 @@ export class UserService {
           profile_picture: profile_picture || '',
           password: hashedPassword,
           email_verified: true,
-          workspace_email: `${first_name.toLowerCase()}@test.com`,
-          workspace_id: null, // Ensure workspace_id is initially null
         });
 
         await existingUser.save();
@@ -263,7 +398,7 @@ export class UserService {
   }
 
   async getUserDetails(user: any) {
-    console.log("User:", user);
+    // console.log('User:', user);
     const foundUser = await this.userModel
       .findById(user.userId)
       .select('-password')

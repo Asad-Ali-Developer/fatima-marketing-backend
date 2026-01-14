@@ -41,17 +41,164 @@ export class RegisterUserDto {
   password: string;
 
   /**
-   * The role of the user.
+   * Internal role assignment. Not accepted from client.
+   * Set this programmatically in your controller/service.
+   * @example { role_type: 'admin' }
+   */
+  @ApiProperty({
+    description: 'Role of the user',
+    example: 'sales_officer',
+    type: String,
+  })
+  role: { role_type: string } = { role_type: 'sales_officer' };
+
+  /**
+   * Status of the user.
    * @type {string}
    * @memberof RegisterUserDto
-   * @example 'user'
+   * @example 'active'
    * */
-  //   @ApiProperty({
-  //     description: 'Role of the user',
-  //     example: 'admin',
-  //     type: String,
-  //   })
-  //   role: string;
+  @ApiProperty({
+    description: 'Status of the user',
+    example: 'active',
+    type: String,
+    required: false,
+  })
+  status?: 'active' | 'inactive';
+}
+
+export class RegisterAdminDto {
+  /**
+   * The full name of the user.
+   * @type {string}
+   * @memberof RegisterAdminOrSalesOfficerDto
+   * @example 'John Doe'
+   */
+  @ApiProperty({
+    description: 'Full name of the user',
+    example: 'John Doe',
+    type: String,
+  })
+  full_name: string;
+
+  /**
+   * The email of the user.
+   * @type {string}
+   * @memberof RegisterAdminOrSalesOfficerDto
+   * @example 'user@email.com'
+   */
+  @ApiProperty({
+    description: 'Email of the user',
+    example: 'user@email.com',
+    type: String,
+  })
+  email: string;
+
+  /**
+   * The password of the user.
+   * @type {string}
+   * @memberof RegisterUserDto
+   * @example 'password123'
+   * */
+  @ApiProperty({
+    description: 'Password of the user',
+    example: 'password123',
+    type: String,
+  })
+  password?: string;
+
+  /**
+   * Internal role assignment. Not accepted from client.
+   * Set this programmatically in your controller/service.
+   * @example { role_type: 'admin' }
+   */
+  @ApiProperty({
+    description: 'Role of the user',
+    example: 'sales_officer',
+    type: String,
+  })
+  role: { role_type: string } = { role_type: 'sales_officer' };
+
+  /**
+   * Status of the user.
+   * @type {string}
+   * @memberof RegisterAdminOrSalesOfficerDto
+   * @example 'active'
+   * */
+  @ApiProperty({
+    description: 'Status of the user',
+    example: 'active',
+    type: String,
+    required: false,
+  })
+  status?: 'active' | 'inactive';
+}
+
+export class RegisterSalesOfficerDto {
+  /**
+   * The full name of the user.
+   * @type {string}
+   * @memberof RegisterAdminOrSalesOfficerDto
+   * @example 'John Doe'
+   */
+  @ApiProperty({
+    description: 'Full name of the user',
+    example: 'John Doe',
+    type: String,
+  })
+  full_name: string;
+
+  /**
+   * The email of the user.
+   * @type {string}
+   * @memberof RegisterAdminOrSalesOfficerDto
+   * @example 'user@email.com'
+   */
+  @ApiProperty({
+    description: 'Email of the user',
+    example: 'user@email.com',
+    type: String,
+  })
+  email: string;
+
+  /**
+   * The password of the user.
+   * @type {string}
+   * @memberof RegisterUserDto
+   * @example 'password123'
+   * */
+  @ApiProperty({
+    description: 'Password of the user',
+    example: 'password123',
+    type: String,
+  })
+  password?: string;
+
+  /**
+   * Internal role assignment. Not accepted from client.
+   * Set this programmatically in your controller/service.
+   * @example { role_type: 'admin' }
+   */
+  @ApiProperty({
+    description: 'Role of the user',
+    example: 'sales_officer',
+    type: String,
+  })
+  role: { role_type: string } = { role_type: 'sales_officer' };
+
+  /**
+   * Status of the user.
+   * @type {string}
+   * @memberof RegisterAdminOrSalesOfficerDto
+   * @example 'active'
+   * */
+  @ApiProperty({
+    description: 'Status of the user',
+    example: 'active',
+    type: String,
+    required: false,
+  })
+  status?: 'active' | 'inactive';
 }
 
 export class LoginUserDto {

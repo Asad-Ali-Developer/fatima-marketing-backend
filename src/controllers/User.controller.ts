@@ -8,7 +8,6 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { AuthGuard } from '@nestjs/passport';
 import {
   ApiBearerAuth,
@@ -19,23 +18,18 @@ import {
 } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { Public } from 'src/decorators';
-import { LoginUserDto, RegisterUserDto } from 'src/DTOs';
-import { JWTMiddleware } from 'src/middlewares/Jwt.middleware';
+import {
+  LoginUserDto,
+  RegisterAdminDto,
+  RegisterSalesOfficerDto,
+  RegisterUserDto,
+} from 'src/DTOs';
 import { UserService } from 'src/services';
 
-@ApiTags('Authorization') // Grouping the endpoints under a single tag
-@Controller('auth') // Base route for this controller
+@ApiTags('Authorization')
+@Controller('auth')
 export class UserController {
-  constructor(
-    private readonly userService: UserService,
-    private readonly jwtService: JwtService,
-  ) {}
-
-  /**
-   * Endpoint to register a new user.
-   * @param registerUserDto - Data transfer object containing user registration data.
-   * @returns A success message and the registered user's data (excluding the password).
-   */
+  constructor(private readonly userService: UserService) {}
 
   @ApiOperation({ summary: 'Register a new user' })
   @ApiBody({ type: RegisterUserDto })
@@ -47,6 +41,59 @@ export class UserController {
     return {
       message: 'User registered successfully',
       data: user,
+      status: true,
+    };
+  }
+
+  @ApiOperation({ summary: 'Register a new Admin' })
+  @ApiBody({ type: RegisterAdminDto })
+  @ApiOkResponse({
+    description: 'Admin registered successfully',
+  })
+  @Post('register-admin')
+  async registerAdmin(@Req() req, @Body() registerAdminDto: RegisterAdminDto) {
+    const userId = req.user.userId;
+    if (!userId) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+
+    const user = await this.userService.registerAdmin(userId, registerAdminDto);
+
+    const roleType = registerAdminDto.role.role_type;
+
+    return {
+      message: `${roleType} registered successfully`,
+      data: user,
+      status: true,
+    };
+  }
+
+  @ApiOperation({ summary: 'Register a new sales officer' })
+  @ApiBody({ type: RegisterSalesOfficerDto })
+  @ApiOkResponse({
+    description: 'Sales officer registered successfully',
+  })
+  @Post('register-sales-officer')
+  async registerSalesOfficer(
+    @Req() req,
+    @Body() registerSalesOfficerDto: RegisterSalesOfficerDto,
+  ) {
+    const userId = req.user.userId;
+    if (!userId) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+
+    const user = await this.userService.registerSalesOfficer(
+      userId,
+      registerSalesOfficerDto,
+    );
+
+    const roleType = registerSalesOfficerDto.role.role_type;
+
+    return {
+      message: `${roleType} registered successfully`,
+      data: user,
+      status: true,
     };
   }
 
@@ -59,7 +106,6 @@ export class UserController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const { email, password, rememberMe } = loginUserDto;
-    console.log('Data: ', loginUserDto);
     try {
       const { accessToken } = await this.userService.loginUser({
         email,
@@ -73,40 +119,24 @@ export class UserController {
 
       const cookieOptions = rememberMe
         ? 30 * 24 * 60 * 60 * 1000
-        : 60 * 60 * 1000; // 30 days or 1 hour
-      const isProd = process.env.NODE_ENV === 'production';
+        : 60 * 60 * 1000;
+
       res.cookie('auth_token', accessToken, {
         httpOnly: true,
-        secure: true,
+        secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         path: '/',
         maxAge: cookieOptions,
-        domain: 'localhost',
+        domain: process.env.NODE_ENV === 'production' ? undefined : 'localhost',
       });
 
       return {
         message: 'Logged in successfully',
         accessToken,
+        status: true,
       };
     } catch (error: any) {
       throw new UnauthorizedException('Invalid Credentials');
-    }
-  }
-
-  @ApiOperation({ summary: 'Verify token' })
-  @ApiOkResponse({ description: 'Token verified successfully' })
-  @Get('verify-token')
-  async verifyToken(@Req() req) {
-    const token = req.cookies['auth_token'];
-    if (!token) {
-      throw new UnauthorizedException('Token not found');
-    }
-
-    try {
-      const decoded = this.jwtService.verify(token);
-      return { valid: true, user: decoded };
-    } catch (error) {
-      throw new UnauthorizedException('Invalid or expired token');
     }
   }
 
@@ -140,15 +170,19 @@ export class UserController {
 
   @ApiOperation({ summary: 'Get user profile' })
   @ApiOkResponse({ description: 'User profile fetched successfully' })
-  @UseGuards(JWTMiddleware)
   @ApiBearerAuth()
   @Get('profile')
   async getProfile(@Req() req) {
-    const user = req.user;
-    return this.userService.getUserDetails(user);
+    // ✅ Middleware will attach req.user before this runs
+    // console.log('📋 Profile endpoint - User from middleware:', req.user);
+
+    if (!req.user) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+
+    return this.userService.getUserDetails(req.user);
   }
 
-  // logout endpoint
   @ApiOperation({ summary: 'Logout' })
   @ApiOkResponse({ description: 'User logged out successfully' })
   @Get('logout')

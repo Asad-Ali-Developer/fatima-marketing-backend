@@ -15,15 +15,45 @@ export class User extends Document {
   @Prop({ type: String, required: true })
   password: string;
 
-//   @Prop({ type: String, default: 'admin' })
-//   role?: string;
+  @Prop({
+    type: {
+      role_type: {
+        type: String,
+        enum: ['super_admin', 'admin', 'sales_officer', 'user'],
+        default: 'sales_officer',
+      },
+    },
+    _id: false, // prevents Mongoose from auto-adding _id to this subdoc
+  })
+  role?: { role_type: string };
 
-//   @Prop({ type: String, default: null })
-//   profile_picture?: string;
+  @Prop({
+    type: String,
+    enum: ['active', 'inactive'],
+    default: 'active',
+  })
+  status?: 'active' | 'inactive';
 
-//   @Prop({ type: String, default: null })
-//   phone_number?: string;
-
+  @Prop({
+    type: {
+      id: { type: String, required: true },
+      email: { type: String, required: true },
+      role: {
+        type: {
+          role_type: { type: String, required: true },
+        },
+        required: true,
+        _id: false,
+      },
+    },
+    _id: false,
+    default: null,
+  })
+  created_by?: {
+    id: string;
+    email: string;
+    role: { role_type: string };
+  };
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
