@@ -90,7 +90,7 @@ export class UserService {
     userId: string,
     registerAdminDto: RegisterAdminDto,
   ): Promise<any> {
-    const { email, full_name, password } = registerAdminDto;
+    const { email, full_name, showPassword } = registerAdminDto;
     const foundUser = await this.userModel
       .findById(userId)
       .select('-password')
@@ -132,9 +132,13 @@ export class UserService {
         role: foundUser.role,
       };
 
+      // Hash the password
+      const hashedPassword = await bcrypt.hash(showPassword as string, 10);
+
       const newUser = new this.userModel({
         ...registerAdminDto,
-        password: password as string,
+        password: hashedPassword,
+        showPassword: showPassword as string,
         created_by: createdBy,
       });
 
@@ -142,7 +146,7 @@ export class UserService {
 
       return {
         ...savedUser.toObject(),
-        password,
+        showPassword,
       };
     } catch (error) {
       if (
@@ -168,7 +172,7 @@ export class UserService {
     userId: string,
     registerSalesOfficerDto: RegisterSalesOfficerDto,
   ): Promise<any> {
-    const { email, full_name, password } = registerSalesOfficerDto;
+    const { email, full_name, showPassword } = registerSalesOfficerDto;
 
     const foundUser = await this.userModel
       .findById(userId)
@@ -179,8 +183,11 @@ export class UserService {
       throw new NotFoundException('Super Admin Not found!');
     }
 
-    if (foundUser.role?.role_type !== 'super_admin') {
-      throw new UnauthorizedException('Only Super Admin can register Admin');
+    const allowedRoles = ['super_admin', 'admin'];
+    if (!allowedRoles.includes(foundUser.role?.role_type!)) {
+      throw new UnauthorizedException(
+        'Only Super Admin or Admin can register Admin',
+      );
     }
 
     if (!email) {
@@ -210,9 +217,13 @@ export class UserService {
         role: foundUser.role,
       };
 
+      // Hash the password
+      const hashedPassword = await bcrypt.hash(showPassword as string, 10);
+
       const newUser = new this.userModel({
         ...registerSalesOfficerDto,
-        password: password as string,
+        password: hashedPassword,
+        showPassword: showPassword as string,
         created_by: createdBy,
       });
 
@@ -220,7 +231,7 @@ export class UserService {
 
       return {
         ...savedUser.toObject(),
-        password,
+        showPassword,
       };
     } catch (error) {
       if (
@@ -252,6 +263,7 @@ export class UserService {
       const user = await this.userModel
         .findOne({ email: { $eq: email } })
         .exec();
+
       if (!user) {
         throw new NotFoundException(
           'Oops! We couldn’t find an account with this email.',

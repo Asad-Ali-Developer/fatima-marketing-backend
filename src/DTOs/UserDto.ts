@@ -108,6 +108,19 @@ export class RegisterAdminDto {
   password?: string;
 
   /**
+   * The showPassword of the user.
+   * @type {string}
+   * @memberof RegisterUserDto
+   * @example 'password123'
+   * */
+  @ApiProperty({
+    description: 'Password of the user',
+    example: 'password123',
+    type: String,
+  })
+  showPassword?: string;
+
+  /**
    * Internal role assignment. Not accepted from client.
    * Set this programmatically in your controller/service.
    * @example { role_type: 'admin' }
@@ -173,6 +186,19 @@ export class RegisterSalesOfficerDto {
     type: String,
   })
   password?: string;
+
+  /**
+   * The showPassword of the user.
+   * @type {string}
+   * @memberof RegisterUserDto
+   * @example 'password123'
+   * */
+  @ApiProperty({
+    description: 'Password of the user',
+    example: 'password123',
+    type: String,
+  })
+  showPassword?: string;
 
   /**
    * Internal role assignment. Not accepted from client.

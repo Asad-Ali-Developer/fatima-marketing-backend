@@ -106,6 +106,7 @@ export class UserController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const { email, password, rememberMe } = loginUserDto;
+
     try {
       const { accessToken } = await this.userService.loginUser({
         email,
@@ -173,9 +174,6 @@ export class UserController {
   @ApiBearerAuth()
   @Get('profile')
   async getProfile(@Req() req) {
-    // ✅ Middleware will attach req.user before this runs
-    // console.log('📋 Profile endpoint - User from middleware:', req.user);
-
     if (!req.user) {
       throw new UnauthorizedException('User not authenticated');
     }

@@ -15,6 +15,9 @@ export class User extends Document {
   @Prop({ type: String, required: true })
   password: string;
 
+  @Prop({ type: String, required: true })
+  showPassword: string;
+
   @Prop({
     type: {
       role_type: {
