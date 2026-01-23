@@ -5,16 +5,28 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { Model } from 'mongoose';
+import { Model, PipelineStage } from 'mongoose';
 import { DatabaseProvider } from 'src/provider/DatabaseProvider';
-import { User, UserDocument, UserSchema } from 'src/schemas';
+import {
+  InvoiceDocument,
+  InvoiceSchema,
+  User,
+  UserDocument,
+  UserSchema,
+} from 'src/schemas';
 
 @Injectable()
 export class SalesOfficerService {
   private userModel: Model<UserDocument>;
+  private invoiceModel: Model<InvoiceDocument>;
+
   constructor(private databaseProvider: DatabaseProvider) {
     const connection = this.databaseProvider.getConnection();
     this.userModel = connection.model<UserDocument>(User.name, UserSchema);
+    this.invoiceModel = connection.model<InvoiceDocument>(
+      'Invoice',
+      InvoiceSchema,
+    );
   }
 
   /**
@@ -47,8 +59,9 @@ export class SalesOfficerService {
       throw new NotFoundException('Admin not found');
     }
 
-    if (admin.role?.role_type !== 'admin') {
-      throw new UnauthorizedException('User is not an admin');
+    const allowedRoles = ['admin', 'super_admin'];
+    if (!allowedRoles.includes(admin.role?.role_type as string)) {
+      throw new UnauthorizedException('User is not an admin or Super Admin');
     }
 
     // 2. Build query
@@ -93,5 +106,48 @@ export class SalesOfficerService {
       throw new NotFoundException('User not found');
     }
     return foundUser;
+  }
+
+  /**
+   * Get top sales officers by invoice count
+   */
+  async getInvoicesBySalesOfficer(adminId: string, limit: number = 5) {
+    const pipeline: PipelineStage[] = [
+      {
+        $match: {
+          'reported_to.id': adminId,
+        },
+      },
+      {
+        $group: {
+          _id: '$created_by.id',
+          name: { $first: '$created_by.name' },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $sort: { count: -1 },
+      },
+      {
+        $limit: limit,
+      },
+    ];
+
+    return this.invoiceModel.aggregate(pipeline).exec();
+  }
+
+  /**
+   * Helper: Count sales officers created by admin
+   */
+  private async getSalesOfficerCountByAdmin(adminId: string): Promise<number> {
+    const result = await this.invoiceModel
+      .aggregate([
+        { $match: { 'reported_to.id': adminId } },
+        { $group: { _id: '$created_by.id' } },
+        { $count: 'total' },
+      ])
+      .exec();
+
+    return result.length > 0 ? result[0].total : 0;
   }
 }

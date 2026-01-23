@@ -1,4 +1,4 @@
-// import 'dotenv/config';
+import 'dotenv/config';
 import { Injectable, Scope, OnApplicationShutdown } from '@nestjs/common';
 import * as mongoose from 'mongoose';
 

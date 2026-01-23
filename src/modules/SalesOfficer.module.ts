@@ -25,7 +25,6 @@ export class SalesOfficerModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(AuthMiddleware)
-      //   .exclude({ path: 'auth/login', method: RequestMethod.POST })
       .forRoutes(SalesOfficerController);
   }
 }

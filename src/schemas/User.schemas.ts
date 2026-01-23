@@ -41,6 +41,7 @@ export class User extends Document {
     type: {
       id: { type: String, required: true },
       email: { type: String, required: true },
+      name: { type: String, required: false },
       role: {
         type: {
           role_type: { type: String, required: true },
@@ -51,10 +52,12 @@ export class User extends Document {
     },
     _id: false,
     default: null,
+    required: true,
   })
   created_by?: {
     id: string;
     email: string;
+    name: string;
     role: { role_type: string };
   };
 }

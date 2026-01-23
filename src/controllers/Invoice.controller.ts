@@ -1,0 +1,220 @@
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Put,
+  Query,
+  Req,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
+import {
+  CreateInvoiceDto,
+  UpdateInvoiceApprovalDto,
+  UpdateInvoiceRemarksDto,
+} from 'src/DTOs';
+import { InvoiceService } from 'src/services';
+
+@ApiTags('Invoices')
+@Controller('invoices')
+export class InvoiceController {
+  constructor(private readonly invoiceService: InvoiceService) {}
+
+  @Post()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create a new invoice' })
+  async createInvoice(@Req() req, @Body() createInvoiceDto: CreateInvoiceDto) {
+    const userId = req.user.userId;
+
+    console.log("Create Invoice Data: ", createInvoiceDto)
+
+    const invoice = await this.invoiceService.createInvoice(
+      userId,
+      createInvoiceDto,
+    );
+
+    return {
+      message: 'Invoice created successfully',
+      data: invoice,
+      status: true,
+    };
+  }
+
+  @Get()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get paginated invoices with filters' })
+  async getInvoices(
+    @Req() req,
+    @Query('page', ParseIntPipe) page?: number,
+    @Query('limit', ParseIntPipe) limit?: number,
+    @Query('searchTerm') searchTerm?: string,
+    @Query('status') status?: string,
+    @Query('date') date?: string, // YYYY-MM-DD
+  ) {
+    const userId = req.user.userId;
+
+    const result = await this.invoiceService.findAllByUser(
+      userId,
+      page ?? 1,
+      limit ?? 10,
+      {
+        searchTerm,
+        status,
+        date,
+      },
+    );
+
+    return {
+      message: 'Invoices retrieved successfully',
+      data: result.data,
+      pagination: {
+        total: result.total,
+        page: result.page,
+        totalPages: result.totalPages,
+        hasNextPage: result.hasNextPage,
+        hasPrevPage: result.hasPrevPage,
+      },
+      status: true,
+    };
+  }
+
+  @Get('reported-to-me')
+  @ApiOperation({ summary: 'Get invoices reported to logged-in admin' })
+  @ApiBearerAuth()
+  async getInvoicesReportedToMe(
+    @Req() req,
+    @Query('page', ParseIntPipe) page?: number,
+    @Query('limit', ParseIntPipe) limit?: number,
+    @Query('searchTerm') searchTerm?: string,
+    @Query('status') status?: string,
+    @Query('date') date?: string,
+  ) {
+    const adminId = req.user.userId; // Ensure your auth middleware sets this
+
+    const result = await this.invoiceService.getInvoicesReportedToAdmin(
+      adminId,
+      page ?? 1,
+      limit ?? 10,
+      { searchTerm, status, date },
+    );
+
+    return {
+      message: 'Invoices retrieved successfully',
+      data: result.data,
+      pagination: {
+        total: result.total,
+        page: result.page,
+        totalPages: result.totalPages,
+        hasNextPage: result.hasNextPage,
+        hasPrevPage: result.hasPrevPage,
+      },
+      status: true,
+    };
+  }
+
+  @Get(':id')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get invoice by ID' })
+  async getInvoiceById(@Req() req, @Param('id') id: string) {
+    const userId = req.user.userId;
+    const invoice = await this.invoiceService.findByIdAndUser(id, userId);
+
+    return {
+      message: 'Invoice retrieved successfully',
+      data: invoice,
+      status: true,
+    };
+  }
+
+  @Put(':id')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update an invoice' })
+  async updateInvoice(
+    @Req() req,
+    @Param('id') id: string,
+    @Body() updateDto: any,
+  ) {
+    const userId = req.user.userId;
+    const invoice = await this.invoiceService.updateInvoice(
+      id,
+      userId,
+      updateDto,
+    );
+
+    return {
+      message: 'Invoice updated successfully',
+      data: invoice,
+      status: true,
+    };
+  }
+
+  @Patch(':id/approval-status')
+  @ApiOperation({ summary: 'Update admin approval status for an invoice' })
+  @ApiBearerAuth()
+  @ApiOkResponse({ description: 'Approval status updated successfully' })
+  async updateApprovalStatus(
+    @Req() req,
+    @Param('id') invoiceId: string,
+    @Body() updateDto: UpdateInvoiceApprovalDto,
+  ) {
+    const adminId = req.user.userId;
+
+    const updatedInvoice =
+      await this.invoiceService.updateInvoiceApprovalStatus(
+        invoiceId,
+        adminId,
+        updateDto,
+      );
+
+    return {
+      message: 'Approval status updated successfully',
+      updatedInvoice,
+      status: true,
+    };
+  }
+
+  @Delete(':id')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete an invoice' })
+  async deleteInvoice(@Req() req, @Param('id') id: string) {
+    const userId = req.user.userId;
+    await this.invoiceService.deleteInvoice(id, userId);
+
+    return {
+      message: 'Invoice deleted successfully',
+      status: true,
+    };
+  }
+
+  @Patch(':id/remarks')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update remarks for an invoice' })
+  async updateInvoiceRemarks(
+    @Req() req,
+    @Param('id') id: string,
+    @Body() updateDto: UpdateInvoiceRemarksDto,
+  ) {
+    const userId = req.user.userId;
+
+    const updatedInvoice = await this.invoiceService.updateInvoiceRemarks(
+      id,
+      userId,
+      updateDto.remarks,
+    );
+
+    return {
+      message: 'Remarks updated successfully',
+      data: updatedInvoice,
+      status: true,
+    };
+  }
+}

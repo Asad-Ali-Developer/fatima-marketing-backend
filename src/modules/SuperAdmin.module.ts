@@ -18,9 +18,6 @@ import { SuperAdminService, UserService } from 'src/services';
 })
 export class SuperAdminModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(AuthMiddleware)
-      //   .exclude({ path: 'auth/login', method: RequestMethod.POST })
-      .forRoutes(SuperAdminController);
+    consumer.apply(AuthMiddleware).forRoutes(SuperAdminController);
   }
 }

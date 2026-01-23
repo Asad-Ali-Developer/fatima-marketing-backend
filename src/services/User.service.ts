@@ -130,6 +130,7 @@ export class UserService {
         id: foundUser._id,
         email: foundUser.email,
         role: foundUser.role,
+        name: foundUser.full_name,
       };
 
       // Hash the password
@@ -215,6 +216,7 @@ export class UserService {
         id: foundUser._id,
         email: foundUser.email,
         role: foundUser.role,
+        name: foundUser.full_name,
       };
 
       // Hash the password
@@ -419,5 +421,37 @@ export class UserService {
       throw new NotFoundException('User not found');
     }
     return { message: 'User details retrieved', data: foundUser };
+  }
+
+  public async getUserDetailsById(userId: string) {
+    // console.log('User:', user);
+    const foundUser = await this.userModel
+      .findById(userId)
+      .select('-password')
+      .exec();
+    if (!foundUser) {
+      throw new NotFoundException('User not found');
+    }
+    return foundUser;
+  }
+
+  /**
+   * Retrieves all users with the role of 'sales_officer'.
+   * @returns Array of sales officers (without password field)
+   */
+  async getSalesOfficers(): Promise<UserDocument[]> {
+    try {
+      const salesOfficers = await this.userModel
+        .find({ 'role.role_type': 'sales_officer' })
+        .select('-password')
+        .exec();
+
+      return salesOfficers;
+    } catch (error) {
+      console.error('Error fetching sales officers:', error);
+      throw new InternalServerErrorException(
+        'Failed to retrieve sales officers.',
+      );
+    }
   }
 }
