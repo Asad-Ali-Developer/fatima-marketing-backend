@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import { Lead, leadSchema } from './Lead.schema';
 
 export type InvoiceDocument = Invoice & Document;
 
@@ -17,8 +18,8 @@ export class Invoice {
   @Prop()
   remarks?: string;
 
-  @Prop({ required: true, type: Number })
-  amount: number;
+  @Prop()
+  amount?: number;
 
   @Prop({ required: true, type: Date })
   date: Date; // Invoice date (not createdAt)
@@ -67,6 +68,11 @@ export class Invoice {
     admin_approval_status: 'pending' | 'approved' | 'rejected';
     approved_at: Date | null;
   };
+
+  
+  // 👇 ADD THIS: Embedded Lead subdocument
+  @Prop({ type: leadSchema, _id: false })
+  generatedByLead?: Lead;
 }
 
 export const InvoiceSchema = SchemaFactory.createForClass(Invoice);

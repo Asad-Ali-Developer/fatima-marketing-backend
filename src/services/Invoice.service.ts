@@ -59,7 +59,7 @@ export class InvoiceService {
       },
     };
 
-    console.log("Invoice Data to be saved: ", invoiceData)
+    console.log('Invoice Data to be saved: ', invoiceData);
 
     const invoice = new this.invoiceModel(invoiceData);
 

@@ -10,6 +10,9 @@ export class Lead {
   userName: string;
 
   @Prop()
+  phoneNumber?: string;
+
+  @Prop()
   location?: string;
 
   @Prop({ required: true })
@@ -21,9 +24,6 @@ export class Lead {
     default: LeadStatus.PENDING,
   })
   status: LeadStatus;
-
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  createdBy: Types.ObjectId;
 
   @Prop()
   remarks?: string;
@@ -41,6 +41,21 @@ export class Lead {
     required: true,
   })
   assignedTo: {
+    id: string;
+    email: string;
+    full_name: string;
+  };
+
+  @Prop({
+    type: {
+      id: { type: String, required: true },
+      email: { type: String, required: true },
+      full_name: { type: String, required: true },
+    },
+    _id: false, // prevents Mongoose from auto-adding _id to this subdoc
+    required: true,
+  })
+  createdBy?: {
     id: string;
     email: string;
     full_name: string;

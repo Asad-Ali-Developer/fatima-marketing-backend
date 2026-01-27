@@ -1,18 +1,18 @@
 import {
-  BadRequestException,
   Injectable,
   NotFoundException,
+  BadRequestException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Model } from 'mongoose';
 import { CreateLeadDto, LeadStatus, UpdateLeadDto } from 'src/DTOs';
 import { DatabaseProvider } from 'src/provider/DatabaseProvider';
 import {
-  LeadDocument,
-  leadSchema,
   User,
-  UserDocument,
+  leadSchema,
   UserSchema,
+  UserDocument,
+  LeadDocument,
 } from 'src/schemas';
 import { UserService } from './User.service';
 
@@ -40,18 +40,9 @@ export class LeadService {
       throw new NotFoundException('Admin not found');
     }
 
-    // Validate assigned sales officer exists
-    const salesOfficer = await this.userService.getUserDetailsById(
-      createLeadDto.assignedTo.id,
-    );
-    if (!salesOfficer) {
-      throw new BadRequestException('Assigned sales officer not found');
-    }
-
     const lead = new this.leadModel({
       ...createLeadDto,
       time: new Date(createLeadDto.time),
-      createdBy: adminId,
     });
 
     return lead.save();

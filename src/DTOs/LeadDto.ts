@@ -1,4 +1,3 @@
-// src/DTOs/lead.dto.ts
 import {
   IsEnum,
   IsNotEmpty,
@@ -28,11 +27,29 @@ class AssignedToDto {
   full_name: string;
 }
 
+class CreatedByDto {
+  @IsNotEmpty()
+  @IsString()
+  id: string;
+
+  @IsNotEmpty()
+  @IsString()
+  email: string;
+
+  @IsNotEmpty()
+  @IsString()
+  full_name: string;
+}
+
 export class CreateLeadDto {
   @IsNotEmpty()
   @IsString()
   userName: string;
 
+  @IsOptional()
+  @IsString()
+  phoneNumber?: string;
+  
   @IsOptional()
   @IsString()
   location?: string;
@@ -47,7 +64,12 @@ export class CreateLeadDto {
   @ValidateNested()
   @Type(() => AssignedToDto)
   @IsNotEmpty()
-  assignedTo: AssignedToDto; // ✅ Full object, not just ID
+  assignedTo: AssignedToDto;
+
+  @ValidateNested()
+  @Type(() => CreatedByDto)
+  @IsNotEmpty()
+  createdBy?: CreatedByDto;
 }
 
 export class UpdateLeadDto extends CreateLeadDto {}

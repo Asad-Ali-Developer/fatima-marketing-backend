@@ -8,6 +8,7 @@ import {
   Min,
   IsIn,
 } from 'class-validator';
+import { Lead } from 'src/schemas';
 
 export class CreateInvoiceDto {
   @IsString()
@@ -15,11 +16,11 @@ export class CreateInvoiceDto {
   customerName: string;
 
   @IsString()
-  @IsNotEmpty()
-  @Matches(/^(03\d{9})$/, {
-    message:
-      'Phone number must be a valid Pakistani mobile number starting with 03 (e.g., 03001234567)',
-  })
+  @IsOptional()
+  // @Matches(/^(03\d{9})$/, {
+  //   message:
+  //     'Phone number must be a valid Pakistani mobile number starting with 03 (e.g., 03001234567)',
+  // })
   phoneNumber: string;
 
   @IsString()
@@ -30,15 +31,17 @@ export class CreateInvoiceDto {
   @IsOptional()
   remarks?: string;
 
-  @IsNumber()
-  @Min(0)
-  amount: number;
+  @IsString()
+  @IsOptional()
+  amount?: string;
 
   @IsDateString()
   date: string;
 
   @IsString()
   status: 'pending' | 'received_so' | 'cancelled';
+
+  generatedByLead?:Lead
 }
 
 export class UpdateInvoiceDto {

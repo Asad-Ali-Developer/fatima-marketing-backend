@@ -33,6 +33,8 @@ export class LeadController {
   async createLead(@Req() req, @Body() createLeadDto: CreateLeadDto) {
     const adminId = req.user.userId; // Ensure auth middleware sets this
 
+    console.log("Create Lead DTO: ", createLeadDto)
+
     const lead = await this.leadService.createLead(adminId, createLeadDto);
 
     return {
