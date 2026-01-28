@@ -3,6 +3,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import {
   AdminModule,
+  ExpenseModule,
+  InventoryModule,
   InvoiceModule,
   LeadModule,
   SalesOfficerModule,
@@ -18,6 +20,8 @@ import {
     InvoiceModule,
     AdminModule,
     LeadModule,
+    InventoryModule,
+    ExpenseModule,
   ],
   controllers: [AppController],
   providers: [AppService],

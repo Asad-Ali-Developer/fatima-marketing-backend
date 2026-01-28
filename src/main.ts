@@ -20,7 +20,7 @@ async function bootstrap() {
   // Configure Swagger
   const config = new DocumentBuilder()
     .setTitle('Fatima Marketing APIs')
-    .setDescription('The API documentation for Fatima Marketing')
+    .setDescription('Created by: asadali.dev512@gmail.com')
     .setVersion('1.15')
     .addTag('NestJs') // Optional: You can add tags here for grouping endpoints
     .build();

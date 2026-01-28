@@ -4,6 +4,8 @@ import { SalesOfficerService } from './SalesOfficer.service';
 import { InvoiceService } from './Invoice.service';
 import { AdminService } from './Admin.service';
 import { LeadService } from './Lead.service';
+import { InventoryService } from './Inventory.service';
+import { ExpenseService } from './Expense.service';
 
 export {
   UserService,
@@ -12,4 +14,6 @@ export {
   InvoiceService,
   AdminService,
   LeadService,
+  InventoryService,
+  ExpenseService,
 };

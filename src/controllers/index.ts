@@ -4,6 +4,8 @@ import { SalesOfficerController } from './SalesOfficer.controller';
 import { InvoiceController } from './Invoice.controller';
 import { AdminController } from './Admin.controller';
 import { LeadController } from './Lead.controller';
+import { InventoryController } from './Inventory.controller';
+import { ExpenseController } from './Expense.controller';
 
 export {
   UserController,
@@ -12,4 +14,6 @@ export {
   InvoiceController,
   AdminController,
   LeadController,
+  InventoryController,
+  ExpenseController
 };

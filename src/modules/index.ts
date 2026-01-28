@@ -4,6 +4,8 @@ import { SalesOfficerModule } from './SalesOfficer.module';
 import { InvoiceModule } from './Invoice.module';
 import { AdminModule } from './Admin.module';
 import { LeadModule } from './Lead.module';
+import { InventoryModule } from './Inventory.module';
+import { ExpenseModule } from './Expense.module';
 
 export {
   UserModule,
@@ -12,4 +14,6 @@ export {
   InvoiceModule,
   AdminModule,
   LeadModule,
+  InventoryModule,
+  ExpenseModule,
 };
