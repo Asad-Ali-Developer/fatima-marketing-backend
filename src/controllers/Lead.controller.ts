@@ -33,7 +33,7 @@ export class LeadController {
   async createLead(@Req() req, @Body() createLeadDto: CreateLeadDto) {
     const adminId = req.user.userId; // Ensure auth middleware sets this
 
-    console.log("Create Lead DTO: ", createLeadDto)
+    console.log('Create Lead DTO: ', createLeadDto);
 
     const lead = await this.leadService.createLead(adminId, createLeadDto);
 
@@ -226,6 +226,49 @@ export class LeadController {
     return {
       message: 'Remarks updated successfully',
       data: lead,
+      status: true,
+    };
+  }
+
+  @Get('officer/:officerId')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get leads assigned to a specific sales officer',
+  })
+  async getLeadsByOfficer(
+    @Req() req,
+    @Param('officerId') officerId: string,
+    @Query('page') pageStr?: string, // ← string | undefined
+    @Query('limit') limitStr?: string, // ← string | undefined
+  ) {
+    // Safely parse page & limit with defaults
+    const page = pageStr ? parseInt(pageStr, 10) : 1;
+    const limit = limitStr ? parseInt(limitStr, 10) : 10;
+
+    // Validate after parsing
+    if (isNaN(page) || isNaN(limit) || page < 1 || limit < 1) {
+      throw new BadRequestException('Invalid page or limit parameter');
+    }
+
+    const requestingUserId = req.user.userId;
+
+    const result = await this.leadService.getLeadsByOfficer(
+      requestingUserId,
+      officerId,
+      page,
+      Math.min(limit, 100), // enforce max limit
+    );
+
+    return {
+      message: 'Leads for officer retrieved successfully',
+      data: result.data,
+      pagination: {
+        total: result.total,
+        page: result.page,
+        totalPages: result.totalPages,
+        hasNextPage: result.hasNextPage,
+        hasPrevPage: result.hasPrevPage,
+      },
       status: true,
     };
   }

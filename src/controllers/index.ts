@@ -6,6 +6,7 @@ import { AdminController } from './Admin.controller';
 import { LeadController } from './Lead.controller';
 import { InventoryController } from './Inventory.controller';
 import { ExpenseController } from './Expense.controller';
+import { DashboardController } from './Dashboard.controller';
 
 export {
   UserController,
@@ -15,5 +16,6 @@ export {
   AdminController,
   LeadController,
   InventoryController,
-  ExpenseController
+  ExpenseController,
+  DashboardController
 };

@@ -73,6 +73,13 @@ export class Invoice {
   // 👇 ADD THIS: Embedded Lead subdocument
   @Prop({ type: leadSchema, _id: false })
   generatedByLead?: Lead;
+
+    // 👇 Add these for TypeScript compatibility
+  @Prop({ type: Date, default: () => new Date() })
+  createdAt?: Date;
+
+  @Prop({ type: Date, default: () => new Date() })
+  updatedAt?: Date;
 }
 
 export const InvoiceSchema = SchemaFactory.createForClass(Invoice);

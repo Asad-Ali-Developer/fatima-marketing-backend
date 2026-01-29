@@ -60,6 +60,13 @@ export class User extends Document {
     name: string;
     role: { role_type: string };
   };
+    // 👇 Add these for TypeScript compatibility
+  @Prop({ type: Date, default: () => new Date() })
+  createdAt?: Date;
+
+  @Prop({ type: Date, default: () => new Date() })
+  updatedAt?: Date;
 }
+
 
 export const UserSchema = SchemaFactory.createForClass(User);

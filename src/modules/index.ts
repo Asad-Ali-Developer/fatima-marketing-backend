@@ -6,6 +6,7 @@ import { AdminModule } from './Admin.module';
 import { LeadModule } from './Lead.module';
 import { InventoryModule } from './Inventory.module';
 import { ExpenseModule } from './Expense.module';
+import { DashboardModule } from './Dashboard.module';
 
 export {
   UserModule,
@@ -16,4 +17,5 @@ export {
   LeadModule,
   InventoryModule,
   ExpenseModule,
+  DashboardModule,
 };

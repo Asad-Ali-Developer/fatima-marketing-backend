@@ -28,6 +28,13 @@ export class Expense {
     name: string;
     role_type: string;
   };
+
+  // 👇 Add these for TypeScript compatibility
+  @Prop({ type: Date, default: () => new Date() })
+  createdAt?: Date;
+
+  @Prop({ type: Date, default: () => new Date() })
+  updatedAt?: Date;
 }
 
 export const ExpenseSchema = SchemaFactory.createForClass(Expense);

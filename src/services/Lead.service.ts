@@ -309,4 +309,58 @@ export class LeadService {
   async getSalesOfficers() {
     return this.userService.getSalesOfficers();
   }
+
+  /**
+   * Fetches all leads assigned to a specific sales officer.
+   * Accessible only to 'admin' or 'super_admin'.
+   */
+  async getLeadsByOfficer(
+    requestingUserId: string, // The user making the request (for auth)
+    officerId: string,
+    page: number = 1,
+    limit: number = 10,
+  ) {
+    // Validate requester is admin/super_admin
+    const requester =
+      await this.userService.getUserDetailsById(requestingUserId);
+    if (
+      !requester ||
+      !['admin', 'super_admin'].includes(requester.role?.role_type!)
+    ) {
+      throw new UnauthorizedException('Only admins can view officer leads');
+    }
+
+    // Validate officer exists and is a sales officer
+    const officer = await this.userService.getUserDetailsById(officerId);
+    if (!officer || officer.role?.role_type !== 'sales_officer') {
+      throw new NotFoundException('Sales officer not found');
+    }
+
+    const pageNum = Math.max(1, page);
+    const limitNum = Math.min(100, Math.max(1, limit));
+    const skip = (pageNum - 1) * limitNum;
+
+    const query = { 'assignedTo.id': officerId };
+
+    const total = await this.leadModel.countDocuments(query).exec();
+    const data = await this.leadModel
+      .find(query)
+      .populate('assignedTo', 'name email')
+      .populate('createdBy', 'name email')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum)
+      .exec();
+
+    const totalPages = Math.ceil(total / limitNum);
+
+    return {
+      data,
+      total,
+      page: pageNum,
+      totalPages,
+      hasNextPage: pageNum < totalPages,
+      hasPrevPage: pageNum > 1,
+    };
+  }
 }

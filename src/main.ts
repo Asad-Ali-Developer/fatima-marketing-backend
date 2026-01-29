@@ -10,11 +10,32 @@ import cookieParser from 'cookie-parser';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bodyParser: false });
 
+  const allowedOrigins = [
+    'http://localhost:3000', // Next.js dev
+    'https://fatima-marketing.vercel.app/', // Production
+  ];
+
   // Enable Cross-Origin Resource Sharing (CORS)
   app.enableCors({
-    origin: ['*'],
+    origin: (origin: any, callback: any) => {
+      if (!origin) return callback(null, true);
+
+      // Allow only trusted origins
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      'Accept',
+      'Origin',
+    ],
   });
 
   // Configure Swagger
