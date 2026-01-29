@@ -12,7 +12,7 @@ async function bootstrap() {
 
   const allowedOrigins = [
     'http://localhost:3000', // Next.js dev
-    'https://fatima-marketing.vercel.app/', // Production
+    'https://fatima-marketing.vercel.app', // Production
   ];
 
   // Enable Cross-Origin Resource Sharing (CORS)
@@ -35,6 +35,7 @@ async function bootstrap() {
       'X-Requested-With',
       'Accept',
       'Origin',
+      'Access-Control-Allow-Origin',
     ],
   });
 
