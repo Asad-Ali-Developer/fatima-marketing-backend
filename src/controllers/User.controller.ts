@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Patch,
   Post,
   Req,
   Res,
@@ -23,7 +24,10 @@ import {
   RegisterAdminDto,
   RegisterSalesOfficerDto,
   RegisterUserDto,
+  UpdateUserDto,
+  UpdateUserProfileDto,
 } from 'src/DTOs';
+import { User } from 'src/schemas';
 import { UserService } from 'src/services';
 
 @ApiTags('Authorization')
@@ -187,5 +191,50 @@ export class UserController {
   async logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie('auth_token');
     return { message: 'Logged out successfully' };
+  }
+
+  @ApiOperation({ summary: 'Update user profile (email, profile image)' })
+  @ApiBearerAuth()
+  @Patch('profile-image')
+  async updateProfile(
+    @Req() req,
+    @Body() updateUserProfileDto: UpdateUserProfileDto,
+  ) {
+    const userId = req.user.userId;
+    if (!userId) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+
+    const updatedUser = await this.userService.updateProfileImage(
+      userId,
+      updateUserProfileDto,
+    );
+
+    return {
+      message: 'Profile updated successfully',
+      data: updatedUser,
+      status: true,
+    };
+  }
+
+  @ApiBearerAuth()
+  @Patch('profile')
+  async updateUser(
+    @Req() req,
+    @Body() updateUserDto: UpdateUserDto,
+  ): Promise<User> {
+    const userId = req.user.userId;
+    if (!userId) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+
+    const updatedUser = await this.userService.updateUser(
+      userId,
+      updateUserDto,
+    );
+
+    // 🚫 Never return password or showPassword
+    const { password, showPassword, ...safeUser } = updatedUser.toObject();
+    return safeUser;
   }
 }

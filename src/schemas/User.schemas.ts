@@ -1,22 +1,24 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-
 import { Document } from 'mongoose';
 
 export type UserDocument = User & Document;
 
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
-export class User extends Document {
+export class User {
   @Prop({ type: String, required: true })
   full_name: string;
 
   @Prop({ type: String, required: true, unique: true })
   email: string;
 
+  @Prop({ type: String, required: false })
+  profileImage?: string;
+
   @Prop({ type: String, required: true })
   password: string;
 
-  @Prop({ type: String, required: true })
-  showPassword: string;
+  @Prop({ type: String, required: false })
+  showPassword?: string;
 
   @Prop({
     type: {
@@ -26,7 +28,7 @@ export class User extends Document {
         default: 'sales_officer',
       },
     },
-    _id: false, // prevents Mongoose from auto-adding _id to this subdoc
+    _id: false,
   })
   role?: { role_type: string };
 
@@ -36,6 +38,12 @@ export class User extends Document {
     default: 'active',
   })
   status?: 'active' | 'inactive';
+
+  @Prop({ type: String, enum: ['male', 'female'], required: false })
+  gender?: 'male' | 'female';
+
+  @Prop({ type: Number, min: 0, max: 100, required: false })
+  commissionedBy?: number; // e.g., 65 = 65%
 
   @Prop({
     type: {
@@ -52,7 +60,7 @@ export class User extends Document {
     },
     _id: false,
     default: null,
-    required: true,
+    required: false,
   })
   created_by?: {
     id: string;
@@ -60,13 +68,10 @@ export class User extends Document {
     name: string;
     role: { role_type: string };
   };
-    // 👇 Add these for TypeScript compatibility
-  @Prop({ type: Date, default: () => new Date() })
-  createdAt?: Date;
 
-  @Prop({ type: Date, default: () => new Date() })
-  updatedAt?: Date;
+  // 👇 Explicitly declare timestamp fields for TS
+  created_at?: Date;
+  updated_at?: Date;
 }
-
 
 export const UserSchema = SchemaFactory.createForClass(User);

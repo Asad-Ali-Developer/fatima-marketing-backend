@@ -4,6 +4,7 @@ import 'dotenv/config';
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -16,9 +17,12 @@ import {
   RegisterAdminDto,
   RegisterSalesOfficerDto,
   RegisterUserDto,
+  UpdateUserDto,
+  UpdateUserProfileDto,
 } from 'src/DTOs';
 import { DatabaseProvider } from 'src/provider/DatabaseProvider';
 import { User, UserDocument, UserSchema } from 'src/schemas';
+import { isValidBase64 } from 'src/utils';
 
 @Injectable()
 export class UserService {
@@ -173,7 +177,8 @@ export class UserService {
     userId: string,
     registerSalesOfficerDto: RegisterSalesOfficerDto,
   ): Promise<any> {
-    const { email, full_name, showPassword } = registerSalesOfficerDto;
+    const { email, full_name, showPassword, gender, commissionedBy } =
+      registerSalesOfficerDto;
 
     const foundUser = await this.userModel
       .findById(userId)
@@ -213,6 +218,8 @@ export class UserService {
       }
 
       const createdBy = {
+        gender,
+        commissionedBy,
         id: foundUser._id,
         email: foundUser.email,
         role: foundUser.role,
@@ -453,5 +460,86 @@ export class UserService {
         'Failed to retrieve sales officers.',
       );
     }
+  }
+
+  async updateProfileImage(
+    userId: string,
+    updateUserDto: UpdateUserProfileDto,
+  ): Promise<any> {
+    const { profileImage } = updateUserDto;
+
+    // Find user
+    const user = await this.userModel.findById(userId).exec();
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Handle profile image
+    if (profileImage !== undefined) {
+      if (profileImage === null || profileImage === '') {
+        user.profileImage = undefined; // Clear image
+      } else {
+        // Optional: validate Base64
+        if (!isValidBase64(profileImage)) {
+          throw new BadRequestException('Invalid Base64 image format');
+        }
+        // Optional: limit size (e.g., max 500KB → ~680k chars)
+        if (profileImage.length > 700_000) {
+          throw new BadRequestException('Image too large (max 500KB)');
+        }
+        user.profileImage = profileImage;
+      }
+    }
+
+    const updatedUser = await user.save();
+    const { password, ...safeUser } = updatedUser.toObject();
+    return safeUser;
+  }
+
+  async updateUser(
+    userId: string,
+    updateData: UpdateUserDto,
+  ): Promise<UserDocument> {
+    const user = await this.userModel.findById(userId).exec();
+    if (!user) throw new NotFoundException('User not found');
+
+    const isSuperAdmin = user.role?.role_type === 'super_admin';
+
+    // ✅ Safely extract allowed fields
+    const {
+      full_name,
+      email,
+      profileImage,
+      showPassword,
+      commissionedBy,
+      status,
+    } = updateData;
+
+    const sanitizedData: Partial<UpdateUserDto> = {
+      ...(full_name !== undefined && { full_name }),
+      ...(email !== undefined && { email }),
+      // ...(gender !== undefined && { gender }),
+      ...(profileImage !== undefined && { profileImage }),
+      ...(showPassword !== undefined && { showPassword }),
+    };
+
+    // Super admins can update sensitive fields
+    if (isSuperAdmin) {
+      if (commissionedBy !== undefined)
+        sanitizedData.commissionedBy = commissionedBy;
+      if (status !== undefined) sanitizedData.status = status;
+    }
+
+    // 🔐 Handle password
+    if (sanitizedData.showPassword !== undefined) {
+      const hashedPassword = await bcrypt.hash(sanitizedData.showPassword, 12);
+      user.password = hashedPassword;
+      user.showPassword = sanitizedData.showPassword; // optional
+    }
+
+    // 🔄 Apply updates
+    Object.assign(user, sanitizedData);
+
+    return user.save();
   }
 }

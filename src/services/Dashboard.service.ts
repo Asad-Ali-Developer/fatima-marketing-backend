@@ -542,7 +542,7 @@ export class DashboardService {
         type: 'sales_officer',
         title: `New sales officer: ${officer.full_name}`,
         subtitle: `${officer.email} • ${officer.status || 'active'}`,
-        time: officer.createdAt!,
+        time: officer.created_at!,
         metadata: {
           officerId: officer._id,
           email: officer.email,
