@@ -505,7 +505,7 @@ export class UserService {
 
     const isSuperAdmin = user.role?.role_type === 'super_admin';
 
-    // ✅ Safely extract allowed fields
+    // ✅ Extract ALL allowed fields, including gender
     const {
       full_name,
       email,
@@ -513,33 +513,69 @@ export class UserService {
       showPassword,
       commissionedBy,
       status,
+      gender, // ← add this
     } = updateData;
 
     const sanitizedData: Partial<UpdateUserDto> = {
       ...(full_name !== undefined && { full_name }),
-      ...(email !== undefined && { email }),
-      // ...(gender !== undefined && { gender }),
+      ...(gender !== undefined && { gender }), // ← include it
       ...(profileImage !== undefined && { profileImage }),
       ...(showPassword !== undefined && { showPassword }),
     };
 
-    // Super admins can update sensitive fields
     if (isSuperAdmin) {
       if (commissionedBy !== undefined)
         sanitizedData.commissionedBy = commissionedBy;
       if (status !== undefined) sanitizedData.status = status;
     }
 
-    // 🔐 Handle password
     if (sanitizedData.showPassword !== undefined) {
       const hashedPassword = await bcrypt.hash(sanitizedData.showPassword, 12);
       user.password = hashedPassword;
-      user.showPassword = sanitizedData.showPassword; // optional
+      // Optional: keep showPassword only if needed; usually omit from DB
+      // delete sanitizedData.showPassword; // better practice
     }
 
-    // 🔄 Apply updates
     Object.assign(user, sanitizedData);
-
     return user.save();
+  }
+
+  async deleteUser(
+    requestingUserId: string, // The user making the request (must be super_admin)
+    targetUserId: string, // The SO to delete
+  ): Promise<void> {
+    // 1. Find the user making the request
+    const requester = await this.userModel.findById(requestingUserId).exec();
+    if (!requester) {
+      throw new NotFoundException('Requesting user not found');
+    }
+
+    // 2. Only super_admin can delete
+    if (requester.role?.role_type !== 'super_admin') {
+      throw new ForbiddenException(
+        'Only Super Admin can delete sales officers',
+      );
+    }
+
+    // 3. Find the target user (SO)
+    const targetUser = await this.userModel.findById(targetUserId).exec();
+    if (!targetUser) {
+      throw new NotFoundException('Sales officer not found');
+    }
+
+    // 4. Ensure target is a sales_officer (not admin/super_admin)
+    if (targetUser.role?.role_type !== 'sales_officer') {
+      throw new BadRequestException(
+        'Only sales officers can be deleted via this endpoint',
+      );
+    }
+
+    // 5. Prevent self-deletion (optional but safe)
+    if (targetUserId === requestingUserId) {
+      throw new ForbiddenException('Super Admin cannot delete themselves');
+    }
+
+    // 6. Delete the user
+    await this.userModel.findByIdAndDelete(targetUserId).exec();
   }
 }

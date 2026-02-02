@@ -12,9 +12,11 @@ import {
   leadSchema,
   UserSchema,
   UserDocument,
+  
   LeadDocument,
 } from 'src/schemas';
 import { UserService } from './User.service';
+import { Types } from 'mongoose';
 
 @Injectable()
 export class LeadService {
@@ -124,6 +126,7 @@ export class LeadService {
   async findAllLeads(
     page: number = 1,
     limit: number = 10,
+    userId: string,
     filters: {
       searchTerm?: string;
       status?: string;
@@ -135,6 +138,11 @@ export class LeadService {
     const skip = (pageNum - 1) * limitNum;
 
     const query: any = {};
+
+    // ✅ Filter by createdBy.id
+    if (userId) {
+      query['createdBy.id'] = userId;
+    }
 
     // Status filter
     if (filters.status && filters.status !== 'all') {

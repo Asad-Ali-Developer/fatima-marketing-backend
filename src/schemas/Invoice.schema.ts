@@ -26,10 +26,10 @@ export class Invoice {
 
   @Prop({
     required: true,
-    enum: ['pending', 'received_so', 'cancelled'],
+    enum: ['pending', 'received_so', 'completed'],
     default: 'pending',
   })
-  status: 'pending' | 'received_so' | 'cancelled';
+  status: 'pending' | 'received_so' | 'completed';
 
   @Prop({
     type: {

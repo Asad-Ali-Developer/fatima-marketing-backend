@@ -39,7 +39,7 @@ export class CreateInvoiceDto {
   date: string;
 
   @IsString()
-  status: 'pending' | 'received_so' | 'cancelled';
+  status: 'pending' | 'received_so' | 'completed';
 
   generatedByLead?:Lead
 }
@@ -69,7 +69,7 @@ export class UpdateInvoiceDto {
   date: string;
 
   @IsString()
-  status: 'pending' | 'received_so' | 'cancelled';
+  status: 'pending' | 'received_so' | 'completed';
 }
 
 export class UpdateInvoiceApprovalDto {

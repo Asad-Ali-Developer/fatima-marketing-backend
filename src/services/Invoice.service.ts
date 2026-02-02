@@ -1,7 +1,7 @@
 import {
-  BadRequestException,
   Injectable,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { Model } from 'mongoose';
 import { CreateInvoiceDto, UpdateInvoiceApprovalDto } from 'src/DTOs';
@@ -58,8 +58,6 @@ export class InvoiceService {
         approved_at: null,
       },
     };
-
-    console.log('Invoice Data to be saved: ', invoiceData);
 
     const invoice = new this.invoiceModel(invoiceData);
 
@@ -125,6 +123,83 @@ export class InvoiceService {
       hasPrevPage: pageNum > 1,
     };
   }
+
+async findAllInvoicesOfSalesOfficerByUser(
+  userId: string,
+  filters: {
+    searchTerm?: string;
+    status?: string;
+    timeRange?: 'lastWeek' | 'lastMonth' | 'last6Months' | 'lastYear';
+    from?: string;
+    to?: string;
+  },
+) {
+  const query: any = { 'created_by.id': userId };
+
+  // Status filter
+  if (filters.status && filters.status !== 'all') {
+    query.status = filters.status;
+  }
+
+  // Search by name or phone
+  if (filters.searchTerm) {
+    const searchRegex = new RegExp(filters.searchTerm, 'i');
+    query.$or = [
+      { customerName: searchRegex },
+      { phoneNumber: { $regex: searchRegex } },
+    ];
+  }
+
+  // Date range logic
+  let startDate: Date | undefined;
+  let endDate: Date | undefined;
+
+  if (filters.from || filters.to) {
+    // Custom date range
+    if (filters.from) startDate = new Date(filters.from);
+    if (filters.to) {
+      endDate = new Date(filters.to);
+      endDate.setHours(23, 59, 59, 999); // include full end day
+    }
+  } else if (filters.timeRange) {
+    const now = new Date();
+    switch (filters.timeRange) {
+      case 'lastWeek':
+        startDate = new Date(now.setDate(now.getDate() - 7));
+        break;
+      case 'lastMonth':
+        startDate = new Date(now.setMonth(now.getMonth() - 1));
+        break;
+      case 'last6Months':
+        startDate = new Date(now.setMonth(now.getMonth() - 6));
+        break;
+      case 'lastYear':
+        startDate = new Date(now.setFullYear(now.getFullYear() - 1));
+        break;
+      default:
+        startDate = undefined;
+    }
+    endDate = new Date(); // up to now
+  }
+
+  // Apply date filter if any
+  if (startDate || endDate) {
+    query.date = {};
+    if (startDate) query.date.$gte = startDate;
+    if (endDate) query.date.$lte = endDate;
+  }
+
+  const total = await this.invoiceModel.countDocuments(query).exec();
+  const data = await this.invoiceModel
+    .find(query)
+    .sort({ createdAt: -1 })
+    .exec();
+
+  return {
+    data,
+    total,
+  };
+}
 
   async getInvoicesReportedToAdmin(
     adminId: string,

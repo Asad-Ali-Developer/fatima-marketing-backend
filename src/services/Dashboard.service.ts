@@ -73,12 +73,12 @@ export type {
 interface InvoiceStats {
   pending: number;
   received: number;
-  cancelled: number;
+  completed: number;
   totalAmount: number;
   approvalStats: {
     pending: number;
     approved: number;
-    rejected: number;
+    completed: number;
   };
 }
 
@@ -388,12 +388,12 @@ export class DashboardService {
     const stats: InvoiceStats = {
       pending: 0,
       received: 0,
-      cancelled: 0,
+      completed: 0,
       totalAmount: 0,
       approvalStats: {
         pending: 0,
         approved: 0,
-        rejected: 0,
+        completed: 0,
       },
     };
 
@@ -401,7 +401,7 @@ export class DashboardService {
       // Status counts
       if (invoice.status === 'pending') stats.pending++;
       else if (invoice.status === 'received_so') stats.received++;
-      else if (invoice.status === 'cancelled') stats.cancelled++;
+      else if (invoice.status === 'completed') stats.completed++;
 
       // Total amount
       stats.totalAmount += invoice.amount || 0;
@@ -412,7 +412,7 @@ export class DashboardService {
       else if (invoice.reported_to?.admin_approval_status === 'approved')
         stats.approvalStats.approved++;
       else if (invoice.reported_to?.admin_approval_status === 'rejected')
-        stats.approvalStats.rejected++;
+        stats.approvalStats.completed++;
     });
 
     return stats;

@@ -1,7 +1,9 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  Param,
   Patch,
   Post,
   Req,
@@ -236,5 +238,20 @@ export class UserController {
     // 🚫 Never return password or showPassword
     const { password, showPassword, ...safeUser } = updatedUser.toObject();
     return safeUser;
+  }
+
+  @Delete('users/:id')
+  async deleteUser(@Req() req, @Param('id') userId: string) {
+    const requestingUserId = req.user.userId;
+    if (!requestingUserId) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+
+    await this.userService.deleteUser(requestingUserId, userId);
+
+    return {
+      message: 'Sales officer deleted successfully',
+      status: true,
+    };
   }
 }

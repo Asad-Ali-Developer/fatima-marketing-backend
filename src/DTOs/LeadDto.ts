@@ -68,7 +68,7 @@ export class CreateLeadDto {
 
   @ValidateNested()
   @Type(() => CreatedByDto)
-  @IsNotEmpty()
+  @IsOptional()
   createdBy?: CreatedByDto;
 }
 

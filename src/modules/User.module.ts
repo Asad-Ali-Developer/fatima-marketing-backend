@@ -13,12 +13,12 @@ import { UserService } from 'src/services';
 @Module({
   imports: [
     JwtModule.register({
-      secret: 'fatima-marketing-rehan', // ✅ MUST match the secret in UserService
+      secret: 'fatima-marketing-rehan',
       signOptions: { expiresIn: '1d' },
     }),
   ],
   controllers: [UserController],
-  providers: [UserService, DatabaseProvider, AuthMiddleware], // ✅ Add as provider
+  providers: [UserService, DatabaseProvider, AuthMiddleware],
   exports: [UserService],
 })
 export class UserModule implements NestModule {

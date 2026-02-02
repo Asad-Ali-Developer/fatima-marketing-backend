@@ -32,9 +32,6 @@ export class LeadController {
   @ApiOperation({ summary: 'Create a new lead' })
   async createLead(@Req() req, @Body() createLeadDto: CreateLeadDto) {
     const adminId = req.user.userId; // Ensure auth middleware sets this
-
-    console.log('Create Lead DTO: ', createLeadDto);
-
     const lead = await this.leadService.createLead(adminId, createLeadDto);
 
     return {
@@ -48,13 +45,17 @@ export class LeadController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get paginated leads with filters' })
   async getLeads(
+    @Req() req,
     @Query('page', ParseIntPipe) page?: number,
     @Query('limit', ParseIntPipe) limit?: number,
     @Query('searchTerm') searchTerm?: string,
     @Query('status') status?: string,
     @Query('date') date?: string,
   ) {
-    const result = await this.leadService.findAllLeads(page ?? 1, limit ?? 10, {
+
+    const userId = req.user.userId
+
+    const result = await this.leadService.findAllLeads(page ?? 1, limit ?? 10, userId, {
       searchTerm,
       status,
       date,

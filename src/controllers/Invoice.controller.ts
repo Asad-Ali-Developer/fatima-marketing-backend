@@ -1,26 +1,27 @@
 import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
-  Put,
-  Query,
   Req,
+  Get,
+  Put,
+  Body,
+  Post,
+  Query,
+  Param,
+  Patch,
+  Delete,
+  Controller,
+  ParseIntPipe,
+  BadRequestException,
 } from '@nestjs/common';
 import {
+  ApiTags,
+  ApiOperation,
   ApiBearerAuth,
   ApiOkResponse,
-  ApiOperation,
-  ApiTags,
 } from '@nestjs/swagger';
 import {
   CreateInvoiceDto,
-  UpdateInvoiceApprovalDto,
   UpdateInvoiceRemarksDto,
+  UpdateInvoiceApprovalDto,
 } from 'src/DTOs';
 import { InvoiceService } from 'src/services';
 
@@ -34,9 +35,6 @@ export class InvoiceController {
   @ApiOperation({ summary: 'Create a new invoice' })
   async createInvoice(@Req() req, @Body() createInvoiceDto: CreateInvoiceDto) {
     const userId = req.user.userId;
-
-    console.log("Create Invoice Data: ", createInvoiceDto)
-
     const invoice = await this.invoiceService.createInvoice(
       userId,
       createInvoiceDto,
@@ -58,7 +56,7 @@ export class InvoiceController {
     @Query('limit', ParseIntPipe) limit?: number,
     @Query('searchTerm') searchTerm?: string,
     @Query('status') status?: string,
-    @Query('date') date?: string, // YYYY-MM-DD
+    @Query('date') date?: string,
   ) {
     const userId = req.user.userId;
 
@@ -82,6 +80,46 @@ export class InvoiceController {
         totalPages: result.totalPages,
         hasNextPage: result.hasNextPage,
         hasPrevPage: result.hasPrevPage,
+      },
+      status: true,
+    };
+  }
+
+  @Get('sales-officers-invoices')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get invoices for a sales officer with time-range filters',
+  })
+  async findAllInvoicesOfSalesOfficerByUser(
+    @Query('salesOfficerId') salesOfficerId: string,
+    @Query('searchTerm') searchTerm?: string,
+    @Query('status') status?: string,
+    @Query('timeRange')
+    timeRange?: 'lastWeek' | 'lastMonth' | 'last6Months' | 'lastYear',
+    @Query('from') from?: string, // ISO string or YYYY-MM-DD
+    @Query('to') to?: string, // ISO string or YYYY-MM-DD
+  ) {
+    if (!salesOfficerId) {
+      throw new BadRequestException('salesOfficerId is required');
+    }
+
+    const result =
+      await this.invoiceService.findAllInvoicesOfSalesOfficerByUser(
+        salesOfficerId,
+        {
+          searchTerm,
+          status,
+          timeRange,
+          from,
+          to,
+        },
+      );
+
+    return {
+      message: 'Invoices retrieved successfully',
+      data: result.data,
+      pagination: {
+        total: result.total,
       },
       status: true,
     };
