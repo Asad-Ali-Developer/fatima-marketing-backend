@@ -9,6 +9,7 @@ import {
   InvoiceModule,
   LeadModule,
   SalesOfficerModule,
+  SOLeadModule,
   SuperAdminModule,
   UserModule,
 } from './modules';
@@ -23,7 +24,8 @@ import {
     LeadModule,
     InventoryModule,
     ExpenseModule,
-    DashboardModule
+    DashboardModule,
+    SOLeadModule,
   ],
   controllers: [AppController],
   providers: [AppService],

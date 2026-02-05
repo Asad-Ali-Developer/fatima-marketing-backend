@@ -1,11 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
-import { LeadStatus } from 'src/DTOs';
+import { HydratedDocument } from 'mongoose';
+import { SOLeadStatus } from 'src/DTOs';
 
-export type LeadDocument = HydratedDocument<Lead>;
+export type SOLeadDocument = HydratedDocument<SOLead>;
 
 @Schema({ timestamps: true })
-export class Lead {
+export class SOLead {
   @Prop({ required: true })
   userName: string;
 
@@ -20,31 +20,16 @@ export class Lead {
 
   @Prop({
     type: String,
-    enum: LeadStatus,
-    default: LeadStatus.PENDING,
+    enum: SOLeadStatus,
+    default: SOLeadStatus.PENDING,
   })
-  status: LeadStatus;
+  status: SOLeadStatus;
 
   @Prop()
   remarks?: string;
 
   @Prop({ default: Date.now })
   createdAt: Date;
-
-  @Prop({
-    type: {
-      id: { type: String, required: false },
-      email: { type: String, required: false },
-      full_name: { type: String, required: false },
-    },
-    _id: false, // prevents Mongoose from auto-adding _id to this subdoc
-    required: false,
-  })
-  assignedTo?: {
-    id: string;
-    email: string;
-    full_name: string;
-  };
 
   @Prop({
     type: {
@@ -62,4 +47,4 @@ export class Lead {
   };
 }
 
-export const leadSchema = SchemaFactory.createForClass(Lead);
+export const SOLeadSchema = SchemaFactory.createForClass(SOLead);

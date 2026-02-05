@@ -7,6 +7,7 @@ import { LeadController } from './Lead.controller';
 import { InventoryController } from './Inventory.controller';
 import { ExpenseController } from './Expense.controller';
 import { DashboardController } from './Dashboard.controller';
+import { SOLeadController } from './SOLead.controller';
 
 export {
   UserController,
@@ -17,5 +18,6 @@ export {
   LeadController,
   InventoryController,
   ExpenseController,
-  DashboardController
+  DashboardController,
+  SOLeadController,
 };

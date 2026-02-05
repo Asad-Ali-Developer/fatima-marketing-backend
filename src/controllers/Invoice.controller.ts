@@ -35,6 +35,9 @@ export class InvoiceController {
   @ApiOperation({ summary: 'Create a new invoice' })
   async createInvoice(@Req() req, @Body() createInvoiceDto: CreateInvoiceDto) {
     const userId = req.user.userId;
+
+    console.log("UserId for the Invoice Creation", userId)
+    
     const invoice = await this.invoiceService.createInvoice(
       userId,
       createInvoiceDto,

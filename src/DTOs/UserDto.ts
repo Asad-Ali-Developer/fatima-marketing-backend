@@ -1,5 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsEnum, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
+import {
+  IsEmail,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
 
 class RegisterStaffDto {
   @ApiProperty({
@@ -24,6 +32,14 @@ class RegisterStaffDto {
     required: false,
   })
   showPassword?: string;
+
+  @ApiProperty({
+    description: 'Rokra of Sales Officer',
+    example: '85k',
+    type: String,
+    required: false,
+  })
+  rokra?: string;
 
   @ApiProperty({
     description: 'Gender of the user',
@@ -74,6 +90,16 @@ export class RegisterSalesOfficerDto extends RegisterStaffDto {
   role: { role_type: 'sales_officer' } = { role_type: 'sales_officer' };
 }
 
+export class UpdateSalesOfficerDto extends RegisterStaffDto {
+  @ApiProperty({
+    description: 'Role of the user',
+    example: 'sales_officer',
+    enum: ['sales_officer'],
+    default: 'sales_officer',
+  })
+  role: { role_type: 'sales_officer' } = { role_type: 'sales_officer' };
+}
+
 // 👇 Keep RegisterUserDto as-is (for regular users)
 export class RegisterUserDto {
   @ApiProperty({ example: 'John Doe' })
@@ -88,7 +114,8 @@ export class RegisterUserDto {
   @ApiProperty({ example: 'active', required: false })
   status?: 'active' | 'inactive';
 
-  // Note: Regular users don't get commission/gender in this flow
+  @ApiProperty({ example: '65k', required: false })
+  salary?: string;
 }
 
 export class LoginUserDto {
@@ -131,6 +158,24 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   showPassword?: string; // plain text — will be hashed to `password`
+
+  @ApiProperty({
+    description: 'Salary of the Sales Officer',
+    example: '90k',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  salary?: string;
+
+  @ApiProperty({
+    description: 'Rokra of the Sales Officer',
+    example: '90k',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  rokra?: string;
 
   @ApiProperty({ enum: ['male', 'female'], required: false })
   @IsOptional()

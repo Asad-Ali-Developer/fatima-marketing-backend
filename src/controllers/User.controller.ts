@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  InternalServerErrorException,
   Param,
   Patch,
   Post,
@@ -17,6 +18,7 @@ import {
   ApiBody,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
 import type { Response } from 'express';
@@ -26,6 +28,7 @@ import {
   RegisterAdminDto,
   RegisterSalesOfficerDto,
   RegisterUserDto,
+  UpdateSalesOfficerDto,
   UpdateUserDto,
   UpdateUserProfileDto,
 } from 'src/DTOs';
@@ -99,6 +102,38 @@ export class UserController {
     return {
       message: `${roleType} registered successfully`,
       data: user,
+      status: true,
+    };
+  }
+
+  @ApiOperation({ summary: 'Update an existing sales officer' })
+  @ApiParam({ name: 'id', description: 'Sales Officer ID', type: String })
+  @ApiBody({ type: UpdateSalesOfficerDto }) // Or create UpdateSalesOfficerDto if you prefer
+  @ApiOkResponse({ description: 'Sales officer updated successfully' })
+  @Patch('sales-officer/:id')
+  async updateSalesOfficer(
+    @Req() req,
+    @Param('id') salesOfficerId: string,
+    @Body() updateDto: UpdateSalesOfficerDto,
+  ) {
+    const updaterId = req.user?.userId;
+    if (!updaterId) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+
+    const updatedUser = await this.userService.updateSalesOfficer(
+      updaterId,
+      salesOfficerId,
+      updateDto,
+    );
+
+    if (!updatedUser) {
+      throw new InternalServerErrorException('Failed to update user');
+    }
+
+    return {
+      message: 'Sales Officer updated successfully',
+      data: updatedUser,
       status: true,
     };
   }

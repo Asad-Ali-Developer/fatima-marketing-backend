@@ -28,6 +28,10 @@ export class InvoiceService {
     userId: string,
     createInvoiceDto: CreateInvoiceDto,
   ): Promise<InvoiceDocument> {
+
+    console.log("USERID inside the service: ", userId)
+    console.log("Invoice DTO: ", createInvoiceDto)
+
     if (
       !createInvoiceDto.customerName ||
       !createInvoiceDto.phoneNumber ||
@@ -37,6 +41,8 @@ export class InvoiceService {
     }
 
     const userFound = await this.userService.getUserDetailsById(userId);
+
+    console.log("User Found: ", userFound)
 
     if (!userFound) {
       throw new NotFoundException('User not found');
@@ -58,6 +64,8 @@ export class InvoiceService {
         approved_at: null,
       },
     };
+
+    console.log("Invoice Data coming to be made: ", invoiceData)
 
     const invoice = new this.invoiceModel(invoiceData);
 

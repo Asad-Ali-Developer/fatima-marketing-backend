@@ -7,21 +7,21 @@ import {
 import { Model } from 'mongoose';
 import { DatabaseProvider } from 'src/provider/DatabaseProvider';
 import {
-  InvoiceDocument,
-  InvoiceSchema,
   User,
-  UserDocument,
   UserSchema,
+  UserDocument,
+  InvoiceSchema,
+  InvoiceDocument,
 } from 'src/schemas';
 import {
-  startOfDay,
-  endOfDay,
-  startOfWeek,
-  endOfWeek,
-  startOfMonth,
-  endOfMonth,
-  subMonths,
   subYears,
+  endOfDay,
+  endOfWeek,
+  subMonths,
+  endOfMonth,
+  startOfDay,
+  startOfWeek,
+  startOfMonth,
 } from 'date-fns';
 import { PipelineStage } from 'mongoose';
 

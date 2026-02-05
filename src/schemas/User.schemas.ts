@@ -14,6 +14,12 @@ export class User {
   @Prop({ type: String, required: false })
   profileImage?: string;
 
+  @Prop({ type: String, required: false })
+  salary?: string;
+
+  @Prop({ type: String, required: false })
+  rokra?: string;
+
   @Prop({ type: String, required: true })
   password: string;
 

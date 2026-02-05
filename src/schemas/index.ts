@@ -8,6 +8,7 @@ import {
   InventoryDocument,
   InventorySchema,
 } from './Inventory.schema';
+import { SOLeadDocument, SOLead, SOLeadSchema } from './SOLead.schema';
 import { Expense, ExpenseDocument, ExpenseSchema } from './Expense';
 
 export {
@@ -19,6 +20,8 @@ export {
   InventorySchema,
   Expense,
   ExpenseSchema,
+  SOLead,
+  SOLeadSchema,
 };
 export type {
   UserDocument,
@@ -28,4 +31,5 @@ export type {
   LeadDocument,
   InventoryDocument,
   ExpenseDocument,
+  SOLeadDocument,
 };

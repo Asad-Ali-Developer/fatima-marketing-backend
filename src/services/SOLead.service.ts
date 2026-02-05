@@ -1,125 +1,42 @@
 import {
   Injectable,
   NotFoundException,
-  BadRequestException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Model } from 'mongoose';
-import { CreateLeadDto, LeadStatus, UpdateLeadDto } from 'src/DTOs';
+import { SOCreateLeadDto, SOLeadStatus, SOUpdateLeadDto, UpdateLeadDto } from 'src/DTOs';
 import { DatabaseProvider } from 'src/provider/DatabaseProvider';
-import {
-  User,
-  leadSchema,
-  UserSchema,
-  UserDocument,
-  LeadDocument,
-} from 'src/schemas';
+import { SOLeadDocument, SOLeadSchema } from 'src/schemas';
 import { UserService } from './User.service';
-import { Types } from 'mongoose';
 
 @Injectable()
-export class LeadService {
-  private leadModel: Model<LeadDocument>;
-  private userModel: Model<UserDocument>;
+export class SOLeadService {
+  private leadModel: Model<SOLeadDocument>;
 
   constructor(
     private databaseProvider: DatabaseProvider,
     private userService: UserService,
   ) {
     const connection = this.databaseProvider.getConnection();
-    this.leadModel = connection.model<LeadDocument>('Lead', leadSchema);
-    this.userModel = connection.model<UserDocument>(User.name, UserSchema);
+    this.leadModel = connection.model<SOLeadDocument>('SOLead', SOLeadSchema);
   }
 
   async createLead(
     adminId: string,
-    createLeadDto: CreateLeadDto,
-  ): Promise<LeadDocument> {
+    soCreateLeadDto: SOCreateLeadDto,
+  ): Promise<SOLeadDocument> {
     // Validate admin exists
     const admin = await this.userService.getUserDetailsById(adminId);
     if (!admin) {
-      throw new NotFoundException('Admin not found');
+      throw new NotFoundException('SO not found!');
     }
 
     const lead = new this.leadModel({
-      ...createLeadDto,
-      time: new Date(createLeadDto.time),
+      ...soCreateLeadDto,
+      time: new Date(soCreateLeadDto.time),
     });
 
     return lead.save();
-  }
-
-  /**
-   * Fetches paginated list of sales officers created by a specific admin.
-   * Accessible to both 'admin' and 'super_admin'.
-   */
-  async getSalesOfficersByAdmin(
-    adminId: string,
-    page: number = 1,
-    limit: number = 10,
-  ) {
-    const pageNum = Math.max(1, page);
-    const limitNum = Math.min(100, Math.max(1, limit));
-
-    const admin = await this.userService.getUserDetailsById(adminId);
-    const allowedRoles = ['admin', 'super_admin'];
-    if (!allowedRoles.includes(admin.role?.role_type!)) {
-      throw new UnauthorizedException('User is not an admin');
-    }
-
-    const query = {
-      'created_by.id': adminId,
-      'role.role_type': 'sales_officer',
-    };
-
-    const total = await this.userModel.countDocuments(query).exec();
-    const totalPages = Math.ceil(total / limitNum);
-    const skip = (pageNum - 1) * limitNum;
-
-    const data = await this.userModel
-      .find(query)
-      .select('-password')
-      .sort({ created_at: -1 })
-      .skip(skip)
-      .limit(limitNum)
-      .exec();
-
-    return {
-      data,
-      total,
-      page: pageNum,
-      totalPages,
-      hasNextPage: pageNum < totalPages,
-      hasPrevPage: pageNum > 1,
-    };
-  }
-
-  /**
-   * Fetches ALL sales officers created by a specific admin (no pagination).
-   * Intended for internal use (e.g., dropdowns, reports).
-   * Only accessible to 'admin' or 'super_admin'.
-   */
-  async getAllSalesOfficersByAdmin(adminId: string) {
-    const admin = await this.userService.getUserDetailsById(adminId);
-    const allowedRoles = ['admin', 'super_admin'];
-    if (!allowedRoles.includes(admin.role?.role_type!)) {
-      throw new UnauthorizedException(
-        'User is not authorized to view sales officers',
-      );
-    }
-
-    const query = {
-      'created_by.id': adminId,
-      'role.role_type': 'sales_officer',
-    };
-
-    const data = await this.userModel
-      .find(query)
-      .select('-password')
-      .sort({ created_at: -1 })
-      .exec();
-
-    return data; // Returns array of UserDocument[]
   }
 
   async findAllLeads(
@@ -167,7 +84,6 @@ export class LeadService {
     const total = await this.leadModel.countDocuments(query).exec();
     const data = await this.leadModel
       .find(query)
-      .populate('assignedTo', 'name email')
       .populate('createdBy', 'name email')
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -193,7 +109,6 @@ export class LeadService {
       searchTerm?: string;
       status?: string;
       date?: string;
-      assignedToId?: string; // ✅ Add this
     } = {},
   ) {
     const pageNum = Math.max(1, page);
@@ -201,11 +116,6 @@ export class LeadService {
     const skip = (pageNum - 1) * limitNum;
 
     const query: any = {};
-
-    // ✅ Filter by assignedTo.id
-    if (filters.assignedToId) {
-      query['assignedTo.id'] = filters.assignedToId;
-    }
 
     // Status filter
     if (filters.status && filters.status !== 'all') {
@@ -248,10 +158,9 @@ export class LeadService {
     };
   }
 
-  async findLeadById(id: string): Promise<LeadDocument> {
+  async findLeadById(id: string): Promise<SOLeadDocument> {
     const lead = await this.leadModel
       .findById(id)
-      .populate('assignedTo', 'name email')
       .populate('createdBy', 'name email')
       .exec();
 
@@ -263,22 +172,9 @@ export class LeadService {
 
   async updateLead(
     id: string,
-    updateDto: UpdateLeadDto,
-  ): Promise<LeadDocument> {
+    updateDto: SOUpdateLeadDto,
+  ): Promise<SOLeadDocument> {
     const lead = await this.findLeadById(id);
-
-    // Validate new assigned sales officer
-    if (
-      updateDto.assignedTo &&
-      updateDto.assignedTo.id !== lead?.assignedTo?.id.toString()
-    ) {
-      const salesOfficer = await this.userService.getUserDetailsById(
-        updateDto.assignedTo.id,
-      );
-      if (!salesOfficer) {
-        throw new BadRequestException('Assigned sales officer not found');
-      }
-    }
 
     Object.assign(lead, {
       ...updateDto,
@@ -298,7 +194,7 @@ export class LeadService {
   async updateLeadRemarks(
     id: string,
     remarks: string | null,
-  ): Promise<LeadDocument> {
+  ): Promise<SOLeadDocument> {
     const lead = await this.findLeadById(id);
     lead.remarks = remarks || undefined;
     return lead.save();
@@ -306,8 +202,8 @@ export class LeadService {
 
   async updateLeadStatus(
     id: string,
-    status: LeadStatus,
-  ): Promise<LeadDocument> {
+    status: SOLeadStatus,
+  ): Promise<SOLeadDocument> {
     const lead = await this.findLeadById(id);
     lead.status = status;
     return lead.save();
@@ -330,17 +226,8 @@ export class LeadService {
     // Validate requester is admin/super_admin
     const requester =
       await this.userService.getUserDetailsById(requestingUserId);
-    if (
-      !requester ||
-      !['admin', 'super_admin'].includes(requester.role?.role_type!)
-    ) {
-      throw new UnauthorizedException('Only admins can view officer leads');
-    }
-
-    // Validate officer exists and is a sales officer
-    const officer = await this.userService.getUserDetailsById(officerId);
-    if (!officer || officer.role?.role_type !== 'sales_officer') {
-      throw new NotFoundException('Sales officer not found');
+    if (!requester || !['sales_officer'].includes(requester.role?.role_type!)) {
+      throw new UnauthorizedException('Only SO can view Self Created leads');
     }
 
     const pageNum = Math.max(1, page);
@@ -352,7 +239,6 @@ export class LeadService {
     const total = await this.leadModel.countDocuments(query).exec();
     const data = await this.leadModel
       .find(query)
-      .populate('assignedTo', 'name email')
       .populate('createdBy', 'name email')
       .sort({ createdAt: -1 })
       .skip(skip)

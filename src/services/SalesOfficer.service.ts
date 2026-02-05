@@ -139,7 +139,7 @@ export class SalesOfficerService {
   /**
    * Helper: Count sales officers created by admin
    */
-  private async getSalesOfficerCountByAdmin(adminId: string): Promise<number> {
+  async getSalesOfficerCountByAdmin(adminId: string): Promise<number> {
     const result = await this.invoiceModel
       .aggregate([
         { $match: { 'reported_to.id': adminId } },

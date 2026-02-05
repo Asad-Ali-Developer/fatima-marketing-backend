@@ -1,14 +1,9 @@
-// src/services/Expense.service.ts (UPDATED VERSION)
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Model } from 'mongoose';
-import { DatabaseProvider } from '../provider/DatabaseProvider';
-import { UserService } from './User.service';
 import { CreateExpenseDto, UpdateExpenseDto } from 'src/DTOs';
 import { ExpenseDocument, ExpenseSchema } from 'src/schemas';
+import { DatabaseProvider } from '../provider/DatabaseProvider';
+import { UserService } from './User.service';
 
 @Injectable()
 export class ExpenseService {

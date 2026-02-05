@@ -17,6 +17,7 @@ import {
   RegisterAdminDto,
   RegisterSalesOfficerDto,
   RegisterUserDto,
+  UpdateSalesOfficerDto,
   UpdateUserDto,
   UpdateUserProfileDto,
 } from 'src/DTOs';
@@ -65,6 +66,8 @@ export class UserService {
 
       // Save the user to the database
       const savedUser = await newUser.save();
+
+      console.log('Saved User: ', savedUser);
 
       // Exclude the password from the returned user data
       const { password: _, ...userWithoutPassword } = savedUser.toObject();
@@ -177,7 +180,7 @@ export class UserService {
     userId: string,
     registerSalesOfficerDto: RegisterSalesOfficerDto,
   ): Promise<any> {
-    const { email, full_name, showPassword, gender, commissionedBy } =
+    const { email, full_name, showPassword, gender, commissionedBy, rokra } =
       registerSalesOfficerDto;
 
     const foundUser = await this.userModel
@@ -231,6 +234,7 @@ export class UserService {
 
       const newUser = new this.userModel({
         ...registerSalesOfficerDto,
+        rokra: rokra,
         password: hashedPassword,
         showPassword: showPassword as string,
         created_by: createdBy,
@@ -273,6 +277,8 @@ export class UserService {
         .findOne({ email: { $eq: email } })
         .exec();
 
+      console.log('User Logged In: ', user);
+
       if (!user) {
         throw new NotFoundException(
           'Oops! We couldn’t find an account with this email.',
@@ -281,6 +287,9 @@ export class UserService {
 
       // Verify the password
       const isPasswordValid = await bcrypt.compare(password, user.password);
+
+      console.log('Is valid credentials: ', isPasswordValid);
+
       if (!isPasswordValid) {
         throw new UnauthorizedException(
           'Oops! Wrong email or password. Try again.',
@@ -496,6 +505,98 @@ export class UserService {
     return safeUser;
   }
 
+  /**
+   * Updates an existing sales officer's details.
+   * @param updaterId - ID of the user performing the update (must be super_admin or admin).
+   * @param salesOfficerId - ID of the sales officer to update.
+   * @param updateDto - Partial data to update.
+   * @returns Updated sales officer data (excluding password).
+   */
+  async updateSalesOfficer(
+    updaterId: string,
+    salesOfficerId: string,
+    updateDto: UpdateSalesOfficerDto, // Reused since fields match; consider renaming to UpdateSalesOfficerDto if needed
+  ): Promise<any> {
+    // 1. Validate updater
+    const updater = await this.userModel
+      .findById(updaterId)
+      .select('-password')
+      .exec();
+    if (!updater) {
+      throw new NotFoundException('Updater not found');
+    }
+
+    const allowedRoles = ['super_admin', 'admin'];
+    if (!allowedRoles.includes(updater.role?.role_type!)) {
+      throw new UnauthorizedException(
+        'Only Super Admin or Admin can update a Sales Officer',
+      );
+    }
+
+    // 2. Find target sales officer
+    const salesOfficer = await this.userModel.findById(salesOfficerId).exec();
+    if (!salesOfficer) {
+      throw new NotFoundException('Sales Officer not found');
+    }
+
+    // Ensure we're only updating a sales officer
+    if (salesOfficer.role?.role_type !== 'sales_officer') {
+      throw new BadRequestException('Target user is not a Sales Officer');
+    }
+
+    const { email, full_name, gender, commissionedBy, rokra, status } =
+      updateDto;
+
+    // 3. Validate critical fields if provided
+    if (full_name !== undefined) {
+      if (typeof full_name !== 'string' || full_name.trim() === '') {
+        throw new BadRequestException('Full name must be a non-empty string');
+      }
+    }
+
+    if (email !== undefined) {
+      // Check for email uniqueness (exclude current user)
+      const existingUser = await this.userModel
+        .findOne({
+          email: { $eq: email },
+          _id: { $ne: salesOfficerId },
+        })
+        .exec();
+
+      if (existingUser) {
+        throw new ConflictException('Email already in use by another user');
+      }
+    }
+
+    // 4. Prepare update object
+    const updateFields: any = {};
+    if (full_name !== undefined) updateFields.full_name = full_name;
+    if (gender !== undefined) updateFields.gender = gender;
+    if (commissionedBy !== undefined)
+      updateFields.commissionedBy = commissionedBy;
+    if (rokra !== undefined) updateFields.rokra = rokra;
+    if (status !== undefined) updateFields.status = status;
+
+    // Handle password update (optional)
+    if (updateDto.showPassword) {
+      const hashedPassword = await bcrypt.hash(updateDto.showPassword, 10);
+      updateFields.password = hashedPassword;
+      updateFields.showPassword = updateDto.showPassword; // store plain for display if needed
+    }
+
+    // 5. Perform update
+    const updatedUser = await this.userModel
+      .findByIdAndUpdate(
+        salesOfficerId,
+        { $set: updateFields },
+        { new: true, runValidators: true },
+      )
+      .select('-password')
+      .exec();
+
+    return updatedUser?.toObject() || null;
+  }
+
   async updateUser(
     userId: string,
     updateData: UpdateUserDto,
@@ -503,41 +604,35 @@ export class UserService {
     const user = await this.userModel.findById(userId).exec();
     if (!user) throw new NotFoundException('User not found');
 
-    const isSuperAdmin = user.role?.role_type === 'super_admin';
-
-    // ✅ Extract ALL allowed fields, including gender
     const {
       full_name,
-      email,
       profileImage,
       showPassword,
       commissionedBy,
       status,
-      gender, // ← add this
+      gender,
+      salary,
     } = updateData;
 
-    const sanitizedData: Partial<UpdateUserDto> = {
-      ...(full_name !== undefined && { full_name }),
-      ...(gender !== undefined && { gender }), // ← include it
-      ...(profileImage !== undefined && { profileImage }),
-      ...(showPassword !== undefined && { showPassword }),
-    };
+    // Apply updates using .set()
+    if (full_name !== undefined) user.set('full_name', full_name);
+    if (gender !== undefined) user.set('gender', gender);
+    if (profileImage !== undefined) user.set('profileImage', profileImage);
+    if (salary !== undefined) user.set('salary', salary); // ✅ explicit
+    if (commissionedBy !== undefined)
+      user.set('commissionedBy', commissionedBy);
+    if (status !== undefined) user.set('status', status);
 
-    if (isSuperAdmin) {
-      if (commissionedBy !== undefined)
-        sanitizedData.commissionedBy = commissionedBy;
-      if (status !== undefined) sanitizedData.status = status;
+    // Handle password separately
+    if (showPassword !== undefined) {
+      const hashedPassword = await bcrypt.hash(showPassword, 12);
+      user.set('password', hashedPassword);
+      user.set('showPassword', showPassword); // if you want to store it
     }
 
-    if (sanitizedData.showPassword !== undefined) {
-      const hashedPassword = await bcrypt.hash(sanitizedData.showPassword, 12);
-      user.password = hashedPassword;
-      // Optional: keep showPassword only if needed; usually omit from DB
-      // delete sanitizedData.showPassword; // better practice
-    }
-
-    Object.assign(user, sanitizedData);
-    return user.save();
+    const savedUser = await user.save();
+    console.log('Final saved user salary:', savedUser.salary); // debug
+    return savedUser;
   }
 
   async deleteUser(

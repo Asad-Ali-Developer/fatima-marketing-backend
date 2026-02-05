@@ -1,18 +1,18 @@
 import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  ParseIntPipe,
-  Post,
-  Put,
-  Query,
   Req,
+  Put,
+  Get,
+  Post,
+  Body,
+  Query,
+  Param,
+  Delete,
+  Controller,
+  ParseIntPipe,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { CreateInventoryDto, UpdateInventoryDto } from 'src/DTOs';
 import { InventoryService } from 'src/services';
+import { CreateInventoryDto, UpdateInventoryDto } from 'src/DTOs';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Inventory')
 @Controller('inventory')
@@ -23,8 +23,6 @@ export class InventoryController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new inventory item' })
   async createInventory(@Req() req, @Body() createDto: CreateInventoryDto) {
-
-
     const userId = req.user.userId;
     const inventory = await this.inventoryService.createInventory(
       userId,

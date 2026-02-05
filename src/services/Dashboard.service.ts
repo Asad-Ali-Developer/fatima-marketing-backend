@@ -444,12 +444,12 @@ export class DashboardService {
         id: lead._id.toString(),
         type: 'lead',
         title: `New lead: ${lead.userName}`,
-        subtitle: `Assigned to ${lead.assignedTo.full_name} • ${lead.status}`,
+        subtitle: `Assigned to ${lead?.assignedTo?.full_name} • ${lead.status}`,
         time: lead.createdAt,
         metadata: {
           leadId: lead._id,
           status: lead.status,
-          assignedTo: lead.assignedTo.full_name,
+          assignedTo: lead?.assignedTo?.full_name,
         },
       });
     });
