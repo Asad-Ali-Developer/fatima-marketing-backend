@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
   UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
 import { Model, PipelineStage } from 'mongoose';
 import { DatabaseProvider } from 'src/provider/DatabaseProvider';
@@ -13,12 +14,16 @@ import {
   User,
   UserDocument,
   UserSchema,
+  SOLeadDocument,
+  SOLeadSchema,
 } from 'src/schemas';
+import { SOLeadStatus } from 'src/DTOs';
 
 @Injectable()
 export class SalesOfficerService {
   private userModel: Model<UserDocument>;
   private invoiceModel: Model<InvoiceDocument>;
+  private soLeadModel: Model<SOLeadDocument>;
 
   constructor(private databaseProvider: DatabaseProvider) {
     const connection = this.databaseProvider.getConnection();
@@ -27,34 +32,21 @@ export class SalesOfficerService {
       'Invoice',
       InvoiceSchema,
     );
+    this.soLeadModel = connection.model<SOLeadDocument>('SOLead', SOLeadSchema);
   }
 
   /**
    * Fetches paginated list of sales officers created by a specific admin.
-   * @param adminId - ID of the admin
-   * @param page - Page number (1-based)
-   * @param limit - Items per page (max 100)
-   * @returns Paginated result with metadata
    */
   async getSalesOfficerByAdmin(
     adminId: string,
     page: number = 1,
     limit: number = 10,
-  ): Promise<{
-    data: User[];
-    total: number;
-    page: number;
-    totalPages: number;
-    hasNextPage: boolean;
-    hasPrevPage: boolean;
-  }> {
-    // Validate inputs
+  ) {
     const pageNum = Math.max(1, page);
-    const limitNum = Math.min(100, Math.max(1, limit)); // Max 100 items per page
+    const limitNum = Math.min(10, Math.max(1, limit));
 
-    // 1. Validate admin exists and is admin
     const admin = await this.getUserDetailsById(adminId);
-
     if (!admin) {
       throw new NotFoundException('Admin not found');
     }
@@ -64,23 +56,18 @@ export class SalesOfficerService {
       throw new UnauthorizedException('User is not an admin or Super Admin');
     }
 
-    // 2. Build query
     const query = {
       'created_by.id': adminId,
       'role.role_type': { $in: ['sales_officer'] },
     };
 
-    // 3. Get total count for pagination metadata
     const total = await this.userModel.countDocuments(query).exec();
-
-    // 4. Calculate pagination values
     const totalPages = Math.ceil(total / limitNum);
     const skip = (pageNum - 1) * limitNum;
 
-    // 5. Fetch paginated data
     const data = await this.userModel
       .find(query)
-      //   .select('-password')
+      .select('-password')
       .sort({ created_at: -1 })
       .skip(skip)
       .limit(limitNum)
@@ -97,7 +84,6 @@ export class SalesOfficerService {
   }
 
   public async getUserDetailsById(userId: string) {
-    // console.log('User:', user);
     const foundUser = await this.userModel
       .findById(userId)
       .select('-password')
@@ -108,9 +94,6 @@ export class SalesOfficerService {
     return foundUser;
   }
 
-  /**
-   * Get top sales officers by invoice count
-   */
   async getInvoicesBySalesOfficer(adminId: string, limit: number = 5) {
     const pipeline: PipelineStage[] = [
       {
@@ -136,9 +119,6 @@ export class SalesOfficerService {
     return this.invoiceModel.aggregate(pipeline).exec();
   }
 
-  /**
-   * Helper: Count sales officers created by admin
-   */
   async getSalesOfficerCountByAdmin(adminId: string): Promise<number> {
     const result = await this.invoiceModel
       .aggregate([
@@ -149,5 +129,185 @@ export class SalesOfficerService {
       .exec();
 
     return result.length > 0 ? result[0].total : 0;
+  }
+
+  // ─── NEW: DASHBOARD LEADS FOR SALES OFFICER ────────────────────────
+
+  async getLeadsForSalesOfficer(
+    soId: string,
+    page: number = 1,
+    limit: number = 10,
+    filters: {
+      searchTerm?: string;
+      status?: string;
+      date?: string;
+    } = {},
+  ) {
+    const pageNum = Math.max(1, page);
+    const limitNum = Math.min(100, Math.max(1, limit));
+    const skip = (pageNum - 1) * limitNum;
+
+    const query: any = {
+      'createdBy.id': soId,
+    };
+
+    if (filters.status && filters.status !== 'all') {
+      if (!['pending', 'in_progress', 'completed'].includes(filters.status)) {
+        throw new BadRequestException('Invalid lead status');
+      }
+      query.status = filters.status;
+    }
+
+    if (filters.searchTerm) {
+      const regex = new RegExp(filters.searchTerm, 'i');
+      query.$or = [{ userName: regex }, { location: regex }];
+      if (filters.searchTerm.match(/^\d+$/)) {
+        query.$or.push({ phoneNumber: filters.searchTerm });
+      }
+    }
+
+    if (filters.date) {
+      const targetDate = new Date(filters.date);
+      if (isNaN(targetDate.getTime())) {
+        throw new BadRequestException('Invalid date');
+      }
+      const start = new Date(targetDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(targetDate);
+      end.setHours(23, 59, 59, 999);
+      query.time = { $gte: start, $lte: end };
+    }
+
+    const total = await this.soLeadModel.countDocuments(query).exec();
+    const data = await this.soLeadModel
+      .find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum)
+      .exec();
+
+    const totalPages = Math.ceil(total / limitNum);
+
+    return {
+      data,
+      total,
+      page: pageNum,
+      totalPages,
+      hasNextPage: pageNum < totalPages,
+      hasPrevPage: pageNum > 1,
+    };
+  }
+
+  // ─── NEW: INVOICES FOR SALES OFFICER ───────────────────────────────
+
+  async getInvoicesForSalesOfficer(
+    soId: string,
+    page: number = 1,
+    limit: number = 10,
+    filters: {
+      searchTerm?: string;
+      status?: string;
+      date?: string;
+    } = {},
+  ) {
+    const pageNum = Math.max(1, page);
+    const limitNum = Math.min(100, Math.max(1, limit));
+    const skip = (pageNum - 1) * limitNum;
+
+    const query: any = {
+      'created_by.id': soId,
+    };
+
+    if (filters.status && filters.status !== 'all') {
+      if (!['pending', 'received_so'].includes(filters.status)) {
+        throw new BadRequestException('Invalid invoice status');
+      }
+      query.status = filters.status;
+    }
+
+    if (filters.searchTerm) {
+      const regex = new RegExp(filters.searchTerm, 'i');
+      query.$or = [{ customerName: regex }, { location: regex }];
+      if (filters.searchTerm.match(/^\d+$/)) {
+        query.$or.push({ phoneNumber: filters.searchTerm });
+      }
+    }
+
+    if (filters.date) {
+      const targetDate = new Date(filters.date);
+      if (isNaN(targetDate.getTime())) {
+        throw new BadRequestException('Invalid date');
+      }
+      const start = new Date(targetDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(targetDate);
+      end.setHours(23, 59, 59, 999);
+      query.date = { $gte: start, $lte: end };
+    }
+
+    const total = await this.invoiceModel.countDocuments(query).exec();
+    const data = await this.invoiceModel
+      .find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum)
+      .exec();
+
+    const totalPages = Math.ceil(total / limitNum);
+
+    return {
+      data,
+      total,
+      page: pageNum,
+      totalPages,
+      hasNextPage: pageNum < totalPages,
+      hasPrevPage: pageNum > 1,
+    };
+  }
+
+  // ─── NEW: DASHBOARD SUMMARY STATS ───────────────────────────────────
+
+  async getDashboardStats(soId: string) {
+    // Leads stats
+    const totalLeads = await this.soLeadModel
+      .countDocuments({
+        'createdBy.id': soId,
+      })
+      .exec();
+    const completedLeads = await this.soLeadModel
+      .countDocuments({
+        'createdBy.id': soId,
+        status: SOLeadStatus.COMPLETED,
+      })
+      .exec();
+
+    // Invoices stats
+    const invoices = await this.invoiceModel
+      .find({ 'created_by.id': soId })
+      .select('amount status')
+      .exec();
+
+    const totalRevenue = invoices.reduce(
+      (sum, inv) => sum + (inv.amount || 0),
+      0,
+    );
+    const receivedAmount = invoices
+      .filter((inv) => inv.status === 'received_so')
+      .reduce((sum, inv) => sum + (inv.amount || 0), 0);
+    const pendingAmount = invoices
+      .filter((inv) => inv.status === 'pending')
+      .reduce((sum, inv) => sum + (inv.amount || 0), 0);
+
+    const conversionRate =
+      totalLeads > 0 ? ((completedLeads / totalLeads) * 100).toFixed(1) : '0.0';
+
+    return {
+      totalLeads,
+      completedLeads,
+      conversionRate,
+      totalRevenue,
+      receivedAmount,
+      pendingAmount,
+    };
   }
 }

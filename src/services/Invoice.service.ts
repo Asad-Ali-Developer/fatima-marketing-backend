@@ -28,9 +28,8 @@ export class InvoiceService {
     userId: string,
     createInvoiceDto: CreateInvoiceDto,
   ): Promise<InvoiceDocument> {
-
-    console.log("USERID inside the service: ", userId)
-    console.log("Invoice DTO: ", createInvoiceDto)
+    console.log('USERID inside the service: ', userId);
+    console.log('Invoice DTO: ', createInvoiceDto);
 
     if (
       !createInvoiceDto.customerName ||
@@ -41,8 +40,6 @@ export class InvoiceService {
     }
 
     const userFound = await this.userService.getUserDetailsById(userId);
-
-    console.log("User Found: ", userFound)
 
     if (!userFound) {
       throw new NotFoundException('User not found');
@@ -64,8 +61,6 @@ export class InvoiceService {
         approved_at: null,
       },
     };
-
-    console.log("Invoice Data coming to be made: ", invoiceData)
 
     const invoice = new this.invoiceModel(invoiceData);
 
@@ -99,6 +94,7 @@ export class InvoiceService {
       query.$or = [
         { customerName: searchRegex },
         { phoneNumber: { $regex: searchRegex } },
+        { invoice_number: { $regex: searchRegex } },
       ];
     }
 
@@ -132,82 +128,82 @@ export class InvoiceService {
     };
   }
 
-async findAllInvoicesOfSalesOfficerByUser(
-  userId: string,
-  filters: {
-    searchTerm?: string;
-    status?: string;
-    timeRange?: 'lastWeek' | 'lastMonth' | 'last6Months' | 'lastYear';
-    from?: string;
-    to?: string;
-  },
-) {
-  const query: any = { 'created_by.id': userId };
+  async findAllInvoicesOfSalesOfficerByUser(
+    userId: string,
+    filters: {
+      searchTerm?: string;
+      status?: string;
+      timeRange?: 'lastWeek' | 'lastMonth' | 'last6Months' | 'lastYear';
+      from?: string;
+      to?: string;
+    },
+  ) {
+    const query: any = { 'created_by.id': userId };
 
-  // Status filter
-  if (filters.status && filters.status !== 'all') {
-    query.status = filters.status;
-  }
-
-  // Search by name or phone
-  if (filters.searchTerm) {
-    const searchRegex = new RegExp(filters.searchTerm, 'i');
-    query.$or = [
-      { customerName: searchRegex },
-      { phoneNumber: { $regex: searchRegex } },
-    ];
-  }
-
-  // Date range logic
-  let startDate: Date | undefined;
-  let endDate: Date | undefined;
-
-  if (filters.from || filters.to) {
-    // Custom date range
-    if (filters.from) startDate = new Date(filters.from);
-    if (filters.to) {
-      endDate = new Date(filters.to);
-      endDate.setHours(23, 59, 59, 999); // include full end day
+    // Status filter
+    if (filters.status && filters.status !== 'all') {
+      query.status = filters.status;
     }
-  } else if (filters.timeRange) {
-    const now = new Date();
-    switch (filters.timeRange) {
-      case 'lastWeek':
-        startDate = new Date(now.setDate(now.getDate() - 7));
-        break;
-      case 'lastMonth':
-        startDate = new Date(now.setMonth(now.getMonth() - 1));
-        break;
-      case 'last6Months':
-        startDate = new Date(now.setMonth(now.getMonth() - 6));
-        break;
-      case 'lastYear':
-        startDate = new Date(now.setFullYear(now.getFullYear() - 1));
-        break;
-      default:
-        startDate = undefined;
+
+    // Search by name or phone
+    if (filters.searchTerm) {
+      const searchRegex = new RegExp(filters.searchTerm, 'i');
+      query.$or = [
+        { customerName: searchRegex },
+        { phoneNumber: { $regex: searchRegex } },
+      ];
     }
-    endDate = new Date(); // up to now
+
+    // Date range logic
+    let startDate: Date | undefined;
+    let endDate: Date | undefined;
+
+    if (filters.from || filters.to) {
+      // Custom date range
+      if (filters.from) startDate = new Date(filters.from);
+      if (filters.to) {
+        endDate = new Date(filters.to);
+        endDate.setHours(23, 59, 59, 999); // include full end day
+      }
+    } else if (filters.timeRange) {
+      const now = new Date();
+      switch (filters.timeRange) {
+        case 'lastWeek':
+          startDate = new Date(now.setDate(now.getDate() - 7));
+          break;
+        case 'lastMonth':
+          startDate = new Date(now.setMonth(now.getMonth() - 1));
+          break;
+        case 'last6Months':
+          startDate = new Date(now.setMonth(now.getMonth() - 6));
+          break;
+        case 'lastYear':
+          startDate = new Date(now.setFullYear(now.getFullYear() - 1));
+          break;
+        default:
+          startDate = undefined;
+      }
+      endDate = new Date(); // up to now
+    }
+
+    // Apply date filter if any
+    if (startDate || endDate) {
+      query.date = {};
+      if (startDate) query.date.$gte = startDate;
+      if (endDate) query.date.$lte = endDate;
+    }
+
+    const total = await this.invoiceModel.countDocuments(query).exec();
+    const data = await this.invoiceModel
+      .find(query)
+      .sort({ createdAt: -1 })
+      .exec();
+
+    return {
+      data,
+      total,
+    };
   }
-
-  // Apply date filter if any
-  if (startDate || endDate) {
-    query.date = {};
-    if (startDate) query.date.$gte = startDate;
-    if (endDate) query.date.$lte = endDate;
-  }
-
-  const total = await this.invoiceModel.countDocuments(query).exec();
-  const data = await this.invoiceModel
-    .find(query)
-    .sort({ createdAt: -1 })
-    .exec();
-
-  return {
-    data,
-    total,
-  };
-}
 
   async getInvoicesReportedToAdmin(
     adminId: string,
@@ -233,7 +229,11 @@ async findAllInvoicesOfSalesOfficerByUser(
 
     if (filters.searchTerm) {
       const regex = new RegExp(filters.searchTerm, 'i');
-      query.$or = [{ customerName: regex }, { phoneNumber: { $regex: regex } }];
+      query.$or = [
+        { customerName: regex },
+        { phoneNumber: { $regex: regex } },
+        { invoice_number: { $regex: regex } },
+      ];
     }
 
     if (filters.date) {

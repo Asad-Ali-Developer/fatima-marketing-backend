@@ -21,6 +21,15 @@ export class Invoice {
   @Prop()
   amount?: number;
 
+  @Prop()
+  invoice_number?: string;
+
+  @Prop()
+  quantity?: string;
+
+  @Prop()
+  property_type?: string;
+
   @Prop({ required: true, type: Date })
   date: Date; // Invoice date (not createdAt)
 

@@ -35,13 +35,25 @@ export class CreateInvoiceDto {
   @IsOptional()
   amount?: string;
 
+  @IsString()
+  @IsOptional()
+  invoice_number?: string;
+
+  @IsString()
+  @IsOptional()
+  quantity?: string;
+
+  @IsString()
+  @IsOptional()
+  property_type?: string;
+
   @IsDateString()
   date: string;
 
   @IsString()
   status: 'pending' | 'received_so' | 'completed';
 
-  generatedByLead?:Lead
+  generatedByLead?: Lead;
 }
 
 export class UpdateInvoiceDto {

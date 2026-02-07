@@ -277,8 +277,6 @@ export class UserService {
         .findOne({ email: { $eq: email } })
         .exec();
 
-      console.log('User Logged In: ', user);
-
       if (!user) {
         throw new NotFoundException(
           'Oops! We couldn’t find an account with this email.',
@@ -287,8 +285,6 @@ export class UserService {
 
       // Verify the password
       const isPasswordValid = await bcrypt.compare(password, user.password);
-
-      console.log('Is valid credentials: ', isPasswordValid);
 
       if (!isPasswordValid) {
         throw new UnauthorizedException(
