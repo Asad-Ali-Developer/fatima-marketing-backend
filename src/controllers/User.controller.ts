@@ -159,10 +159,7 @@ export class UserController {
         throw new UnauthorizedException('Failed to generate access token');
       }
 
-      const cookieOptions = rememberMe
-        ? 30 * 24 * 60 * 60 * 1000
-        : 60 * 60 * 1000;
-
+      const cookieOptions =  30 * 24 * 60 * 60 * 1000
       res.cookie('auth_token', accessToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
