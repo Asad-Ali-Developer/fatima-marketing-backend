@@ -15,7 +15,7 @@ export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
   /**
-   * Get all dashboard statistics
+   * Get all dashboard statistics usual
    */
   @Get('stats')
   @ApiBearerAuth()
