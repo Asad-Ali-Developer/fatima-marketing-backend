@@ -26,6 +26,9 @@ export class User {
   @Prop({ type: String, required: false })
   showPassword?: string;
 
+  @Prop()
+  refreshToken?: string;
+
   @Prop({
     type: {
       role_type: {

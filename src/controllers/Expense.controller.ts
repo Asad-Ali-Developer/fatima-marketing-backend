@@ -9,9 +9,11 @@ import {
   Put,
   Query,
   Req,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CreateExpenseDto, UpdateExpenseDto } from 'src/DTOs';
+import { JwtCookieAuthGuard } from 'src/guards';
 import { ExpenseService } from 'src/services';
 
 @ApiTags('Expenses')
@@ -19,6 +21,7 @@ import { ExpenseService } from 'src/services';
 export class ExpenseController {
   constructor(private readonly expenseService: ExpenseService) {}
 
+  @UseGuards(JwtCookieAuthGuard)
   @Post()
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new expense' })
@@ -33,6 +36,7 @@ export class ExpenseController {
     };
   }
 
+  @UseGuards(JwtCookieAuthGuard)
   @Get()
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get paginated expenses with filters' })
@@ -69,6 +73,7 @@ export class ExpenseController {
     };
   }
 
+  @UseGuards(JwtCookieAuthGuard)
   @Get(':id')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get expense by ID' })
@@ -83,6 +88,7 @@ export class ExpenseController {
     };
   }
 
+  @UseGuards(JwtCookieAuthGuard)
   @Put(':id')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update an expense' })
@@ -105,6 +111,7 @@ export class ExpenseController {
     };
   }
 
+  @UseGuards(JwtCookieAuthGuard)
   @Delete(':id')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete an expense' })

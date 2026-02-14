@@ -5,6 +5,7 @@ import {
   ParseIntPipe,
   Query,
   Req,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -12,6 +13,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { JwtCookieAuthGuard } from 'src/guards';
 import { AdminService, SalesOfficerService } from 'src/services';
 
 @ApiTags('Admin')
@@ -25,6 +27,7 @@ export class AdminController {
   @ApiOperation({ summary: 'Get paginated sales officers created by admin' })
   @ApiOkResponse({ description: 'Sales officers retrieved successfully' })
   @ApiBearerAuth()
+  @UseGuards(JwtCookieAuthGuard)
   @Get('sales-officers/created-by-admin')
   async getSalesOfficersCreatedByMe(
     @Req() req,
@@ -53,6 +56,7 @@ export class AdminController {
     };
   }
 
+  @UseGuards(JwtCookieAuthGuard)
   @Get('stats')
   async getDashboardStats(@Req() req) {
     const adminId = req.user.userId;
@@ -64,6 +68,7 @@ export class AdminController {
     };
   }
 
+  @UseGuards(JwtCookieAuthGuard)
   @Get('trend/daily')
   async getDailyTrend(@Req() req, @Query('days') days: number = 30) {
     const adminId = req.user.userId;
@@ -78,6 +83,7 @@ export class AdminController {
     };
   }
 
+  @UseGuards(JwtCookieAuthGuard)
   @Get('invoices/by-sales-officer')
   async getInvoicesBySalesOfficer(
     @Req() req,
@@ -98,6 +104,7 @@ export class AdminController {
   /**
    * Get a specific sales officer by ID
    */
+  @UseGuards(JwtCookieAuthGuard)
   @Get('sales-officers/:id')
   @ApiOperation({ summary: 'Get sales officer by ID' })
   @ApiBearerAuth()
@@ -114,6 +121,7 @@ export class AdminController {
   /**
    * Get invoices created by a specific SO (reported to this admin)
    */
+  @UseGuards(JwtCookieAuthGuard)
   @Get('sales-officers/:id/invoices')
   @ApiOperation({ summary: 'Get invoices by sales officer ID' })
   @ApiBearerAuth()

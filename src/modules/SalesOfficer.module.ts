@@ -1,30 +1,19 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { SalesOfficerController } from 'src/controllers';
-import { AuthMiddleware } from 'src/middlewares/Auth.middleware';
+import { JwtCookieAuthGuard } from 'src/guards';
 import { DatabaseProvider } from 'src/provider/DatabaseProvider';
 import { SalesOfficerService, UserService } from 'src/services';
 
 @Module({
-  imports: [
-    JwtModule.register({
-      secret: 'fatima-marketing-rehan',
-      signOptions: { expiresIn: '1d' },
-    }),
-  ],
+  imports: [JwtModule.register({})],
   controllers: [SalesOfficerController],
   providers: [
     SalesOfficerService,
     DatabaseProvider,
-    AuthMiddleware,
     UserService,
+    JwtCookieAuthGuard,
   ],
-  exports: [SalesOfficerService],
+  exports: [SalesOfficerService, JwtCookieAuthGuard],
 })
-export class SalesOfficerModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(AuthMiddleware)
-      .forRoutes(SalesOfficerController);
-  }
-}
+export class SalesOfficerModule {}

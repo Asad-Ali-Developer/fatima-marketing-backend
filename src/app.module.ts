@@ -1,33 +1,35 @@
-import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import {
+  UserModule,
+  LeadModule,
   AdminModule,
-  DashboardModule,
+  SOLeadModule,
+  InvoiceModule,
   ExpenseModule,
   InventoryModule,
-  InvoiceModule,
-  LeadModule,
-  SalesOfficerModule,
-  SOLeadModule,
+  DashboardModule,
   SuperAdminModule,
-  UserModule,
+  SalesOfficerModule,
 } from './modules';
 
+import { Module } from '@nestjs/common';
+import { AppService } from './app.service';
+import { AppController } from './app.controller';
+import { RateLimitService } from './services';
+
 @Module({
-  imports: [
-    UserModule,
+  imports: [  
+    UserModule, // Only this - it has everything
+    LeadModule,
+    AdminModule,
+    SOLeadModule,
+    ExpenseModule,
+    InvoiceModule,
+    DashboardModule,
+    InventoryModule,
     SuperAdminModule,
     SalesOfficerModule,
-    InvoiceModule,
-    AdminModule,
-    LeadModule,
-    InventoryModule,
-    ExpenseModule,
-    DashboardModule,
-    SOLeadModule,
   ],
+  providers: [AppService, RateLimitService],
   controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}

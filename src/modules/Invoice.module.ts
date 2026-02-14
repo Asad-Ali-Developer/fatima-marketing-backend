@@ -1,22 +1,19 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { InvoiceController } from 'src/controllers';
-import { AuthMiddleware } from 'src/middlewares';
+import { JwtCookieAuthGuard } from 'src/guards';
 import { DatabaseProvider } from 'src/provider/DatabaseProvider';
 import { InvoiceService, UserService } from 'src/services';
 
 @Module({
-  imports: [
-    JwtModule.register({
-      secret: 'fatima-marketing-rehan',
-      signOptions: { expiresIn: '1d' },
-    }),
+  imports: [JwtModule.register({})],
+  providers: [
+    InvoiceService,
+    DatabaseProvider,
+    UserService,
+    JwtCookieAuthGuard,
   ],
-  providers: [InvoiceService, DatabaseProvider, UserService],
   controllers: [InvoiceController],
+  exports: [JwtCookieAuthGuard],
 })
-export class InvoiceModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer.apply(AuthMiddleware).forRoutes(InvoiceController);
-  }
-}
+export class InvoiceModule {}

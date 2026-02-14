@@ -11,6 +11,7 @@ import {
   Put,
   Query,
   Req,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
@@ -18,10 +19,8 @@ import {
   SOLeadStatus,
   SOUpdateLeadDto,
   SOUpdateLeadRemarksDto,
-  UpdateLeadDto,
-  UpdateLeadRemarksDto,
-  UpdateLeadStatusDto
 } from 'src/DTOs';
+import { JwtCookieAuthGuard } from 'src/guards';
 import { SOLeadService } from 'src/services';
 
 @ApiTags('SO Leads')
@@ -29,9 +28,10 @@ import { SOLeadService } from 'src/services';
 export class SOLeadController {
   constructor(private readonly soLeadService: SOLeadService) {}
 
-  @Post()
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new lead By Sales Officer' })
+  @UseGuards(JwtCookieAuthGuard)
+  @Post()
   async createLead(@Req() req, @Body() soCreateLeadDto: SOCreateLeadDto) {
     const soId = req.user.userId; // Ensure auth middleware sets this
     const lead = await this.soLeadService.createLead(soId, soCreateLeadDto);
@@ -43,9 +43,10 @@ export class SOLeadController {
     };
   }
 
-  @Get()
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get paginated leads with filters' })
+  @UseGuards(JwtCookieAuthGuard)
+  @Get()
   async getLeads(
     @Req() req,
     @Query('page', ParseIntPipe) page?: number,
@@ -81,11 +82,12 @@ export class SOLeadController {
     };
   }
 
-  @Get('for-so')
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get paginated leads assigned to the sales officer',
   })
+  @UseGuards(JwtCookieAuthGuard)
+  @Get('for-so')
   async getLeadsForSO(
     @Req() req,
     @Query('page', ParseIntPipe) page?: number,
@@ -130,9 +132,10 @@ export class SOLeadController {
     };
   }
 
-  @Get(':id')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get lead by ID' })
+  @UseGuards(JwtCookieAuthGuard)
+  @Get(':id')
   async getLeadById(@Param('id') id: string) {
     const lead = await this.soLeadService.findLeadById(id);
     return {
@@ -142,10 +145,14 @@ export class SOLeadController {
     };
   }
 
-  @Put(':id')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update a SO lead' })
-  async updateLead(@Param('id') id: string, @Body() updateDto: SOUpdateLeadDto) {
+  @UseGuards(JwtCookieAuthGuard)
+  @Put(':id')
+  async updateLead(
+    @Param('id') id: string,
+    @Body() updateDto: SOUpdateLeadDto,
+  ) {
     const lead = await this.soLeadService.updateLead(id, updateDto);
     return {
       message: 'SO Lead updated successfully',
@@ -154,9 +161,10 @@ export class SOLeadController {
     };
   }
 
-  @Delete(':id')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete a lead' })
+  @UseGuards(JwtCookieAuthGuard)
+  @Delete(':id')
   async deleteLead(@Param('id') id: string) {
     await this.soLeadService.deleteLead(id);
     return {
@@ -165,9 +173,10 @@ export class SOLeadController {
     };
   }
 
-  @Patch(':id/remarks')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update remarks for a SO lead' })
+  @UseGuards(JwtCookieAuthGuard)
+  @Patch(':id/remarks')
   async updateLeadRemarks(
     @Param('id') id: string,
     @Body() updateDto: SOUpdateLeadRemarksDto,
@@ -183,9 +192,10 @@ export class SOLeadController {
     };
   }
 
-  @Patch(':id/status')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update remarks for a SO lead' })
+  @UseGuards(JwtCookieAuthGuard)
+  @Patch(':id/status')
   async updateLeadStatus(
     @Param('id') id: string,
     @Body() updateDto: SOUpdateLeadDto,
@@ -201,11 +211,12 @@ export class SOLeadController {
     };
   }
 
-  @Get('officer/:officerId')
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get SO leads assigned to a specific sales officer',
   })
+  @UseGuards(JwtCookieAuthGuard)
+  @Get('officer/:officerId')
   async getLeadsByOfficer(
     @Req() req,
     @Param('officerId') officerId: string,

@@ -11,6 +11,7 @@ import {
   Controller,
   ParseIntPipe,
   BadRequestException,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -23,6 +24,7 @@ import {
   UpdateInvoiceRemarksDto,
   UpdateInvoiceApprovalDto,
 } from 'src/DTOs';
+import { JwtCookieAuthGuard } from 'src/guards';
 import { InvoiceService } from 'src/services';
 
 @ApiTags('Invoices')
@@ -30,6 +32,7 @@ import { InvoiceService } from 'src/services';
 export class InvoiceController {
   constructor(private readonly invoiceService: InvoiceService) {}
 
+  @UseGuards(JwtCookieAuthGuard)
   @Post()
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new invoice' })
@@ -50,6 +53,7 @@ export class InvoiceController {
     };
   }
 
+  @UseGuards(JwtCookieAuthGuard)
   @Get()
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get paginated invoices with filters' })
@@ -88,6 +92,7 @@ export class InvoiceController {
     };
   }
 
+  @UseGuards(JwtCookieAuthGuard)
   @Get('sales-officers-invoices')
   @ApiBearerAuth()
   @ApiOperation({
@@ -128,6 +133,7 @@ export class InvoiceController {
     };
   }
 
+  @UseGuards(JwtCookieAuthGuard)
   @Get('reported-to-me')
   @ApiOperation({ summary: 'Get invoices reported to logged-in admin' })
   @ApiBearerAuth()
@@ -162,6 +168,7 @@ export class InvoiceController {
     };
   }
 
+  @UseGuards(JwtCookieAuthGuard)
   @Get(':id')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get invoice by ID' })
@@ -176,6 +183,7 @@ export class InvoiceController {
     };
   }
 
+  @UseGuards(JwtCookieAuthGuard)
   @Put(':id')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update an invoice' })
@@ -198,6 +206,7 @@ export class InvoiceController {
     };
   }
 
+  @UseGuards(JwtCookieAuthGuard)
   @Patch(':id/approval-status')
   @ApiOperation({ summary: 'Update admin approval status for an invoice' })
   @ApiBearerAuth()
@@ -223,6 +232,7 @@ export class InvoiceController {
     };
   }
 
+  @UseGuards(JwtCookieAuthGuard)
   @Delete(':id')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete an invoice' })
@@ -236,6 +246,7 @@ export class InvoiceController {
     };
   }
 
+  @UseGuards(JwtCookieAuthGuard)
   @Patch(':id/remarks')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update remarks for an invoice' })

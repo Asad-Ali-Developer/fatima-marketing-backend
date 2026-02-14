@@ -1,10 +1,11 @@
-import { Controller, Get, ParseIntPipe, Query, Req } from '@nestjs/common';
+import { Controller, Get, ParseIntPipe, Query, Req, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { JwtCookieAuthGuard } from 'src/guards';
 import { SalesOfficerService } from 'src/services';
 
 @ApiTags('Sales Officer')
@@ -15,6 +16,7 @@ export class SalesOfficerController {
   @ApiOperation({ summary: 'Get paginated sales officers created by admin' })
   @ApiOkResponse({ description: 'Sales officers retrieved successfully' })
   @ApiBearerAuth()
+  @UseGuards(JwtCookieAuthGuard)
   @Get('sales-officers/created-by-admin')
   async getSalesOfficersCreatedByMe(
     @Req() req,
@@ -46,6 +48,7 @@ export class SalesOfficerController {
   // ─── NEW: GET LEADS FOR DASHBOARD ───────────────────────────────────
   @ApiOperation({ summary: 'Get leads for current Sales Officer (dashboard)' })
   @ApiBearerAuth()
+  @UseGuards(JwtCookieAuthGuard)
   @Get('leads')
   async getLeadsForSO(
     @Req() req,
@@ -83,6 +86,7 @@ export class SalesOfficerController {
     summary: 'Get invoices for current Sales Officer (dashboard)',
   })
   @ApiBearerAuth()
+  @UseGuards(JwtCookieAuthGuard)
   @Get('invoices')
   async getInvoicesForSO(
     @Req() req,
@@ -118,6 +122,7 @@ export class SalesOfficerController {
   // ─── NEW: GET DASHBOARD SUMMARY STATS ───────────────────────────────
   @ApiOperation({ summary: 'Get dashboard summary stats for Sales Officer' })
   @ApiBearerAuth()
+  @UseGuards(JwtCookieAuthGuard)
   @Get('dashboard-stats')
   async getDashboardStats(@Req() req) {
     const soId = req.user.userId;

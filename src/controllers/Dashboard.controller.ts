@@ -1,12 +1,18 @@
-// src/controllers/Dashboard.controller.ts
 import {
-    BadRequestException,
-    Controller,
-    Get,
-    Query,
-    Req
+  Req,
+  Get,
+  Query,
+  Controller,
+  BadRequestException,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiQuery,
+  ApiOperation,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
+import { JwtCookieAuthGuard } from 'src/guards';
 import { DashboardService } from 'src/services';
 
 @ApiTags('Dashboard')
@@ -17,6 +23,7 @@ export class DashboardController {
   /**
    * Get all dashboard statistics usual
    */
+  @UseGuards(JwtCookieAuthGuard)
   @Get('stats')
   @ApiBearerAuth()
   @ApiOperation({
@@ -38,6 +45,7 @@ export class DashboardController {
   /**
    * Get expense summary
    */
+  @UseGuards(JwtCookieAuthGuard)
   @Get('expenses/summary')
   @ApiBearerAuth()
   @ApiOperation({
@@ -59,6 +67,7 @@ export class DashboardController {
   /**
    * Get expense trends
    */
+  @UseGuards(JwtCookieAuthGuard)
   @Get('expenses/trends')
   @ApiBearerAuth()
   @ApiOperation({
@@ -80,6 +89,7 @@ export class DashboardController {
   /**
    * Get sales officers performance
    */
+  @UseGuards(JwtCookieAuthGuard)
   @Get('officers/performance')
   @ApiBearerAuth()
   @ApiOperation({
@@ -102,6 +112,7 @@ export class DashboardController {
   /**
    * Get invoice statistics
    */
+  @UseGuards(JwtCookieAuthGuard)
   @Get('invoices/stats')
   @ApiBearerAuth()
   @ApiOperation({
@@ -123,6 +134,7 @@ export class DashboardController {
   /**
    * Get recent activities
    */
+  @UseGuards(JwtCookieAuthGuard)
   @Get('activities/recent')
   @ApiBearerAuth()
   @ApiOperation({
@@ -159,11 +171,13 @@ export class DashboardController {
   /**
    * Get lead status distribution
    */
+  @UseGuards(JwtCookieAuthGuard)
   @Get('leads/distribution')
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get lead status distribution',
-    description: 'Returns count of leads by status (pending, in_progress, completed)',
+    description:
+      'Returns count of leads by status (pending, in_progress, completed)',
   })
   async getLeadStatusDistribution(@Req() req) {
     const userId = req.user.userId;
@@ -180,6 +194,7 @@ export class DashboardController {
   /**
    * Get inventory summary
    */
+  @UseGuards(JwtCookieAuthGuard)
   @Get('inventory/summary')
   @ApiBearerAuth()
   @ApiOperation({
@@ -201,6 +216,7 @@ export class DashboardController {
   /**
    * Get complete dashboard data (all stats in one call)
    */
+  @UseGuards(JwtCookieAuthGuard)
   @Get('complete')
   @ApiBearerAuth()
   @ApiOperation({
@@ -222,6 +238,7 @@ export class DashboardController {
   /**
    * Get expense report data for PDF generation
    */
+  @UseGuards(JwtCookieAuthGuard)
   @Get('expenses/report')
   @ApiBearerAuth()
   @ApiOperation({
@@ -285,6 +302,7 @@ export class DashboardController {
   /**
    * Get quick stats (lightweight endpoint for frequent updates)
    */
+  @UseGuards(JwtCookieAuthGuard)
   @Get('quick-stats')
   @ApiBearerAuth()
   @ApiOperation({

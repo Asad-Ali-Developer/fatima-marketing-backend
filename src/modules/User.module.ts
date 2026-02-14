@@ -1,38 +1,24 @@
-import {
-  Module,
-  NestModule,
-  MiddlewareConsumer,
-  RequestMethod,
-} from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { UserController } from 'src/controllers';
-import { AuthMiddleware } from 'src/middlewares/Auth.middleware';
 import { DatabaseProvider } from 'src/provider/DatabaseProvider';
-import { UserService } from 'src/services';
+import { AuthService, UserService } from 'src/services';
+import { JwtCookieAuthGuard } from 'src/guards';
 
 @Module({
   imports: [
     JwtModule.register({
-      secret: 'fatima-marketing-rehan',
-      signOptions: { expiresIn: '1d' },
+      secret: process.env.JWT_ACCESS_SECRET,
+      signOptions: { expiresIn: '15m' },
     }),
   ],
   controllers: [UserController],
-  providers: [UserService, DatabaseProvider, AuthMiddleware],
-  exports: [UserService],
+  providers: [
+    UserService,
+    AuthService,
+    DatabaseProvider,
+    JwtCookieAuthGuard, // Provide the guard here
+  ],
+  exports: [UserService, AuthService, DatabaseProvider, JwtCookieAuthGuard],
 })
-export class UserModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(AuthMiddleware)
-      .exclude(
-        { path: 'auth/login', method: RequestMethod.POST },
-        { path: 'auth/register', method: RequestMethod.POST },
-        { path: 'auth/verify-token', method: RequestMethod.GET },
-        { path: 'auth/google/login', method: RequestMethod.GET },
-        { path: 'auth/google/callback', method: RequestMethod.GET },
-        { path: 'auth/logout', method: RequestMethod.GET },
-      )
-      .forRoutes(UserController); // ✅ Apply to all UserController routes
-  }
-}
+export class UserModule {}

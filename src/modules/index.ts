@@ -8,6 +8,7 @@ import { InventoryModule } from './Inventory.module';
 import { ExpenseModule } from './Expense.module';
 import { DashboardModule } from './Dashboard.module';
 import { SOLeadModule } from './SOLead.module';
+import { AuthModule } from './Auth.module';
 
 export {
   UserModule,
@@ -20,4 +21,5 @@ export {
   ExpenseModule,
   DashboardModule,
   SOLeadModule,
+  AuthModule,
 };

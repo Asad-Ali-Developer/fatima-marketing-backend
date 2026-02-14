@@ -1,10 +1,11 @@
-import { Controller, Get, ParseIntPipe, Query, Req } from '@nestjs/common';
+import { Controller, Get, ParseIntPipe, Query, Req, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { JwtCookieAuthGuard } from 'src/guards';
 import { SuperAdminService } from 'src/services';
 
 @ApiTags('Super Admin')
@@ -15,6 +16,7 @@ export class SuperAdminController {
   @ApiOperation({ summary: 'Get paginated admins created by super admin' })
   @ApiOkResponse({ description: 'Admins retrieved successfully' })
   @ApiBearerAuth()
+  @UseGuards(JwtCookieAuthGuard)
   @Get('admins/created-by-super-admin')
   async getAdminsCreatedByMe(
     @Req() req,

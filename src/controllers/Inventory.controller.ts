@@ -9,16 +9,19 @@ import {
   Delete,
   Controller,
   ParseIntPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { InventoryService } from 'src/services';
 import { CreateInventoryDto, UpdateInventoryDto } from 'src/DTOs';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { JwtCookieAuthGuard } from 'src/guards';
 
 @ApiTags('Inventory')
 @Controller('inventory')
 export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}
 
+  @UseGuards(JwtCookieAuthGuard)
   @Post()
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new inventory item' })
@@ -36,6 +39,7 @@ export class InventoryController {
     };
   }
 
+  @UseGuards(JwtCookieAuthGuard)
   @Get()
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get paginated inventory items with search filter' })
@@ -67,6 +71,7 @@ export class InventoryController {
     };
   }
 
+  @UseGuards(JwtCookieAuthGuard)
   @Get(':id')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get inventory item by ID' })
@@ -81,6 +86,7 @@ export class InventoryController {
     };
   }
 
+  @UseGuards(JwtCookieAuthGuard)
   @Put(':id')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update an inventory item' })
@@ -103,6 +109,7 @@ export class InventoryController {
     };
   }
 
+  @UseGuards(JwtCookieAuthGuard)
   @Delete(':id')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete an inventory item' })

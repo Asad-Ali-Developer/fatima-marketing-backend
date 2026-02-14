@@ -1,22 +1,14 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { LeadController } from 'src/controllers';
-import { AuthMiddleware } from 'src/middlewares';
+import { JwtCookieAuthGuard } from 'src/guards';
 import { DatabaseProvider } from 'src/provider/DatabaseProvider';
 import { LeadService, UserService } from 'src/services';
 
 @Module({
-  imports: [
-    JwtModule.register({
-      secret: 'fatima-marketing-rehan',
-      signOptions: { expiresIn: '1d' },
-    }),
-  ],
-  providers: [LeadService, DatabaseProvider, UserService],
+  imports: [JwtModule.register({})],
+  providers: [LeadService, DatabaseProvider, UserService, JwtCookieAuthGuard],
   controllers: [LeadController],
+  exports: [JwtCookieAuthGuard],
 })
-export class LeadModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer.apply(AuthMiddleware).forRoutes(LeadController);
-  }
-}
+export class LeadModule {}

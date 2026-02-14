@@ -21,7 +21,7 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
-import type { Response } from 'express';
+import type { Response, Request } from 'express';
 import { Public } from 'src/decorators';
 import {
   LoginUserDto,
@@ -32,13 +32,17 @@ import {
   UpdateUserDto,
   UpdateUserProfileDto,
 } from 'src/DTOs';
+import { JwtCookieAuthGuard } from 'src/guards';
 import { User } from 'src/schemas';
-import { UserService } from 'src/services';
+import { AuthService, UserService } from 'src/services';
 
 @ApiTags('Authorization')
 @Controller('auth')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly authService: AuthService,
+  ) {}
 
   @ApiOperation({ summary: 'Register a new user' })
   @ApiBody({ type: RegisterUserDto })
@@ -59,6 +63,7 @@ export class UserController {
   @ApiOkResponse({
     description: 'Admin registered successfully',
   })
+  @UseGuards(JwtCookieAuthGuard)
   @Post('register-admin')
   async registerAdmin(@Req() req, @Body() registerAdminDto: RegisterAdminDto) {
     const userId = req.user.userId;
@@ -82,6 +87,7 @@ export class UserController {
   @ApiOkResponse({
     description: 'Sales officer registered successfully',
   })
+  @UseGuards(JwtCookieAuthGuard)
   @Post('register-sales-officer')
   async registerSalesOfficer(
     @Req() req,
@@ -110,6 +116,7 @@ export class UserController {
   @ApiParam({ name: 'id', description: 'Sales Officer ID', type: String })
   @ApiBody({ type: UpdateSalesOfficerDto }) // Or create UpdateSalesOfficerDto if you prefer
   @ApiOkResponse({ description: 'Sales officer updated successfully' })
+  @UseGuards(JwtCookieAuthGuard)
   @Patch('sales-officer/:id')
   async updateSalesOfficer(
     @Req() req,
@@ -138,40 +145,40 @@ export class UserController {
     };
   }
 
-  @ApiOperation({ summary: 'Login a user' })
-  @ApiBody({ type: LoginUserDto })
-  @ApiOkResponse({ description: 'User logged in successfully' })
+  @Public()
   @Post('login')
   async loginUser(
     @Body() loginUserDto: LoginUserDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { email, password, rememberMe } = loginUserDto;
-
     try {
-      const { accessToken } = await this.userService.loginUser({
-        email,
-        password,
-        rememberMe,
-      });
+      const { accessToken, refreshToken } =
+        await this.authService.login(loginUserDto);
 
       if (!accessToken) {
         throw new UnauthorizedException('Failed to generate access token');
       }
 
-      const cookieOptions =  30 * 24 * 60 * 60 * 1000
-      res.cookie('auth_token', accessToken, {
+      // Set accessToken
+      res.cookie('access_token', accessToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         path: '/',
-        maxAge: cookieOptions,
-        domain: process.env.NODE_ENV === 'production' ? undefined : 'localhost',
+        maxAge: 1 * 60 * 1000, // 1 minute for testing
+      });
+
+      // Set refreshToken - FIXED: sameSite: 'lax'
+      res.cookie('refresh_token', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax', // ✅ Fixed: was 'strict'
+        path: '/',
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       });
 
       return {
         message: 'Logged in successfully',
-        accessToken,
         status: true,
       };
     } catch (error: any) {
@@ -180,14 +187,63 @@ export class UserController {
   }
 
   @Public()
+  @Get('refresh')
+  async refresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const refreshToken = req.cookies?.refresh_token;
+
+    if (!refreshToken) {
+      console.log('❌ No refresh token in cookies');
+      throw new UnauthorizedException('Refresh token missing');
+    }
+
+    try {
+      const { accessToken, refreshToken: newRefreshToken } =
+        await this.authService.refresh(refreshToken);
+
+      // Update access token cookie
+      res.cookie('access_token', accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 15 * 60 * 1000, // 1 minute for testing
+      });
+
+      // Update refresh token cookie - FIXED: sameSite: 'lax'
+      res.cookie('refresh_token', newRefreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 30 * 24 * 60 * 60 * 1000, // ✅ 30 days
+      });
+
+      return {
+        message: 'Token refreshed',
+        status: true,
+      };
+    } catch (error) {
+      console.error('❌ Refresh failed:', error);
+      res.clearCookie('access_token');
+      res.clearCookie('refresh_token');
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+  }
+
+  @Public()
   @UseGuards(AuthGuard('google'))
   @ApiOperation({ summary: 'Google login' })
+  @UseGuards(JwtCookieAuthGuard)
   @Get('google/login')
   googleLogin(@Req() _req) {}
 
   @Public()
   @UseGuards(AuthGuard('google'))
   @ApiOperation({ summary: 'Google callback' })
+  @UseGuards(JwtCookieAuthGuard)
   @Get('google/callback')
   async googleCallback(@Req() req, @Res({ passthrough: true }) res: Response) {
     const { accessToken } = await this.userService.googleLogin(req.user);
@@ -209,9 +265,11 @@ export class UserController {
 
   @ApiOperation({ summary: 'Get user profile' })
   @ApiOkResponse({ description: 'User profile fetched successfully' })
-  @ApiBearerAuth()
+  @UseGuards(JwtCookieAuthGuard)
   @Get('profile')
   async getProfile(@Req() req) {
+    console.log('Requested User: ', req);
+
     if (!req.user) {
       throw new UnauthorizedException('User not authenticated');
     }
@@ -219,16 +277,24 @@ export class UserController {
     return this.userService.getUserDetails(req.user);
   }
 
-  @ApiOperation({ summary: 'Logout' })
-  @ApiOkResponse({ description: 'User logged out successfully' })
   @Get('logout')
-  async logout(@Res({ passthrough: true }) res: Response) {
-    res.clearCookie('auth_token');
+  async logout(@Req() req, @Res({ passthrough: true }) res: Response) {
+    const userId = req.user?.userId;
+    if (!userId) {
+      throw new UnauthorizedException();
+    }
+
+    await this.authService.logout(userId);
+
+    res.clearCookie('access_token');
+    res.clearCookie('refresh_token');
+
     return { message: 'Logged out successfully' };
   }
 
   @ApiOperation({ summary: 'Update user profile (email, profile image)' })
   @ApiBearerAuth()
+  @UseGuards(JwtCookieAuthGuard)
   @Patch('profile-image')
   async updateProfile(
     @Req() req,
@@ -252,6 +318,7 @@ export class UserController {
   }
 
   @ApiBearerAuth()
+  @UseGuards(JwtCookieAuthGuard)
   @Patch('profile')
   async updateUser(
     @Req() req,
@@ -272,6 +339,7 @@ export class UserController {
     return safeUser;
   }
 
+  @UseGuards(JwtCookieAuthGuard)
   @Delete('users/:id')
   async deleteUser(@Req() req, @Param('id') userId: string) {
     const requestingUserId = req.user.userId;

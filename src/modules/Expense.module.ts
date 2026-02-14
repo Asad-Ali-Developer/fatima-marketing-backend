@@ -1,22 +1,19 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ExpenseController } from 'src/controllers';
-import { AuthMiddleware } from 'src/middlewares';
+import { JwtCookieAuthGuard } from 'src/guards';
 import { DatabaseProvider } from 'src/provider/DatabaseProvider';
 import { ExpenseService, UserService } from 'src/services';
 
 @Module({
-  imports: [
-    JwtModule.register({
-      secret: 'fatima-marketing-rehan',
-      signOptions: { expiresIn: '1d' },
-    }),
+  imports: [JwtModule.register({})],
+  providers: [
+    ExpenseService,
+    DatabaseProvider,
+    UserService,
+    JwtCookieAuthGuard,
   ],
-  providers: [ExpenseService, DatabaseProvider, UserService],
   controllers: [ExpenseController],
+  exports: [JwtCookieAuthGuard],
 })
-export class ExpenseModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer.apply(AuthMiddleware).forRoutes(ExpenseController);
-  }
-}
+export class ExpenseModule {}

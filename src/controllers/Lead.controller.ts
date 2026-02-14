@@ -11,6 +11,7 @@ import {
   Put,
   Query,
   Req,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
@@ -20,6 +21,7 @@ import {
   UpdateLeadRemarksDto,
   UpdateLeadStatusDto,
 } from 'src/DTOs';
+import { JwtCookieAuthGuard } from 'src/guards';
 import { LeadService } from 'src/services';
 
 @ApiTags('Leads')
@@ -27,8 +29,9 @@ import { LeadService } from 'src/services';
 export class LeadController {
   constructor(private readonly leadService: LeadService) {}
 
-  @Post()
   @ApiBearerAuth()
+  @UseGuards(JwtCookieAuthGuard)
+  @Post()
   @ApiOperation({ summary: 'Create a new lead' })
   async createLead(@Req() req, @Body() createLeadDto: CreateLeadDto) {
     const adminId = req.user.userId; // Ensure auth middleware sets this
@@ -41,9 +44,10 @@ export class LeadController {
     };
   }
 
-  @Get()
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get paginated leads with filters' })
+  @UseGuards(JwtCookieAuthGuard)
+  @Get()
   async getLeads(
     @Req() req,
     @Query('page', ParseIntPipe) page?: number,
@@ -75,11 +79,12 @@ export class LeadController {
     };
   }
 
-  @Get('for-so')
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get paginated leads assigned to the sales officer',
   })
+  @UseGuards(JwtCookieAuthGuard)
+  @Get('for-so')
   async getLeadsForSO(
     @Req() req,
     @Query('page', ParseIntPipe) page?: number,
@@ -115,9 +120,10 @@ export class LeadController {
     };
   }
 
-  @Get('sales-officers')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all sales officers for assignment' })
+  @UseGuards(JwtCookieAuthGuard)
+  @Get('sales-officers')
   async getSalesOfficers() {
     const officers = await this.leadService.getSalesOfficers();
     return {
@@ -127,6 +133,7 @@ export class LeadController {
     };
   }
 
+  @UseGuards(JwtCookieAuthGuard)
   @Get('sales-officers-paginated')
   async getPaginatedSalesOfficers(
     @Req() req,
@@ -142,6 +149,8 @@ export class LeadController {
     return { message: 'Success', ...result };
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtCookieAuthGuard)
   @Get('sales-officers/all')
   async getAllSalesOfficers(@Req() req) {
     const adminId = req.user.userId;
@@ -160,9 +169,10 @@ export class LeadController {
     };
   }
 
-  @Get(':id')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get lead by ID' })
+  @UseGuards(JwtCookieAuthGuard)
+  @Get(':id')
   async getLeadById(@Param('id') id: string) {
     const lead = await this.leadService.findLeadById(id);
     return {
@@ -172,9 +182,10 @@ export class LeadController {
     };
   }
 
-  @Put(':id')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update a lead' })
+  @UseGuards(JwtCookieAuthGuard)
+  @Put(':id')
   async updateLead(@Param('id') id: string, @Body() updateDto: UpdateLeadDto) {
     const lead = await this.leadService.updateLead(id, updateDto);
     return {
@@ -184,9 +195,10 @@ export class LeadController {
     };
   }
 
-  @Delete(':id')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete a lead' })
+  @UseGuards(JwtCookieAuthGuard)
+  @Delete(':id')
   async deleteLead(@Param('id') id: string) {
     await this.leadService.deleteLead(id);
     return {
@@ -195,9 +207,10 @@ export class LeadController {
     };
   }
 
-  @Patch(':id/remarks')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update remarks for a lead' })
+  @UseGuards(JwtCookieAuthGuard)
+  @Patch(':id/remarks')
   async updateLeadRemarks(
     @Param('id') id: string,
     @Body() updateDto: UpdateLeadRemarksDto,
@@ -213,9 +226,10 @@ export class LeadController {
     };
   }
 
-  @Patch(':id/status')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update remarks for a lead' })
+  @UseGuards(JwtCookieAuthGuard)
+  @Patch(':id/status')
   async updateLeadStatus(
     @Param('id') id: string,
     @Body() updateDto: UpdateLeadStatusDto,
@@ -231,11 +245,12 @@ export class LeadController {
     };
   }
 
-  @Get('officer/:officerId')
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get leads assigned to a specific sales officer',
   })
+  @UseGuards(JwtCookieAuthGuard)
+  @Get('officer/:officerId')
   async getLeadsByOfficer(
     @Req() req,
     @Param('officerId') officerId: string,

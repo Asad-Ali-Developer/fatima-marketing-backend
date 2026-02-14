@@ -2,6 +2,7 @@
   <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
 </p>
 
+
 [circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
 [circleci-url]: https://circleci.com/gh/nestjs/nest
 
@@ -24,6 +25,17 @@
 ## Description
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+
+| Feature                      | Implementation                              |
+| ---------------------------- | ------------------------------------------- |
+| **Global Protection**        | 100 req/min per user/IP                     |
+| **Brute Force Protection**   | 10 login attempts per 15 min                 |
+| **Infinite Loop Prevention** | 10 refresh attempts per 30 sec               |
+| **Distributed Storage**      | Redis (shared across instances)             |
+| **Smart Key Generation**     | Uses user ID if authenticated, IP otherwise |
+| **Skip Successful Logins**   | Successful auth doesn't count against limit |
+| **No Cache Headers**         | Prevents 304 caching issues                 |
+
 
 ## Project setup
 

@@ -1,27 +1,23 @@
+import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import cookieParser from 'cookie-parser';
 import { json, urlencoded } from 'express';
 import passport from 'passport';
 import { AppModule } from './app.module';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { ValidationPipe } from '@nestjs/common';
-import * as express from 'express';
-import cookieParser from 'cookie-parser';
+import { RateLimitService } from './services';
+import { allowedHeaders, allowedOrigins } from './utils';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bodyParser: false });
 
-  const allowedOrigins = [
-    'http://localhost:3000', // Next.js dev
-    'https://fatima-marketing.vercel.app', // Production
-    'https://fatimamarketing.xenvasol.com'
-  ];
+   // Get rate limiting service from app context
+  const rateLimitService = app.get(RateLimitService);
 
-  // Enable Cross-Origin Resource Sharing (CORS)
+  // Enable CORS
   app.enableCors({
     origin: (origin: any, callback: any) => {
       if (!origin) return callback(null, true);
-
-      // Allow only trusted origins
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
@@ -30,49 +26,41 @@ async function bootstrap() {
     },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
-    allowedHeaders: [
-      'Content-Type',
-      'Authorization',
-      'X-Requested-With',
-      'Accept',
-      'Origin',
-      'Access-Control-Allow-Origin',
-    ],
+    allowedHeaders: allowedHeaders,
   });
 
   // Configure Swagger
   const config = new DocumentBuilder()
     .setTitle('Fatima Marketing APIs')
     .setDescription('Created by: asadali.dev512@gmail.com')
-    .setVersion('1.15')
-    .addTag('NestJs') // Optional: You can add tags here for grouping endpoints
+    .setVersion('1.25')
+    .addTag('NestJs')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-
   SwaggerModule.setup('/', app, document);
 
-  // Initialize Passport.js for authentication
+  // Initialize Passport
   app.use(passport.initialize());
 
-  // Apply global validation pipe for request validation
+  // Apply global validation pipe
   app.useGlobalPipes(new ValidationPipe());
 
-  // Set global API prefix for versioning (e.g., /api/v1)
+  // Set global API prefix
   app.setGlobalPrefix('api/v1');
+  
+  // Apply specific limiters BEFORE global limiter
+  app.use('/api/v1/auth/login', rateLimitService.authenticationLimiter());
+  app.use('/api/v1/auth/register', rateLimitService.authenticationLimiter());
+  app.use('/api/v1/auth/refresh', rateLimitService.refreshLimiter());
 
-  // Enable raw body for webhook route
-  app.use(
-    '/api/v1/webhooks/sendgrid',
-    express.raw({ type: 'application/json' }),
-  );
+  // app.use(rateLimitService.globalLimiter());
 
-  // ✅ CORRECT ORDER
-  app.use(cookieParser()); // FIRST - Must parse cookies before anything else
-  app.use(json()); // THEN - Parse JSON bodies
-  app.use(urlencoded()); // THEN - Parse URL-encoded bodies
+  // Cookie parser and body parsers AFTER rate limiting
+  app.use(cookieParser());
+  app.use(json());
+  app.use(urlencoded({ extended: true }));
 
-  // Start the application on port 8080
   await app.listen(8080);
 }
 

@@ -1,22 +1,19 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { DashboardController } from 'src/controllers';
-import { AuthMiddleware } from 'src/middlewares';
+import { JwtCookieAuthGuard } from 'src/guards';
 import { DatabaseProvider } from 'src/provider/DatabaseProvider';
 import { DashboardService, UserService } from 'src/services';
 
 @Module({
-  imports: [
-    JwtModule.register({
-      secret: 'fatima-marketing-rehan',
-      signOptions: { expiresIn: '1d' },
-    }),
+  imports: [JwtModule.register({})],
+  providers: [
+    DashboardService,
+    DatabaseProvider,
+    UserService,
+    JwtCookieAuthGuard,
   ],
-  providers: [DashboardService, DatabaseProvider, UserService],
   controllers: [DashboardController],
+  exports: [JwtCookieAuthGuard],
 })
-export class DashboardModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer.apply(AuthMiddleware).forRoutes(DashboardController);
-  }
-}
+export class DashboardModule {}

@@ -427,7 +427,6 @@ export class UserService {
     // console.log('User:', user);
     const foundUser = await this.userModel
       .findById(user.userId)
-      .select('-password')
       .exec();
     if (!foundUser) {
       throw new NotFoundException('User not found');
@@ -435,11 +434,21 @@ export class UserService {
     return { message: 'User details retrieved', data: foundUser };
   }
 
+  async getUserDetailsByEmail(email: string) {
+    // console.log('User:', user);
+    const foundUser = await this.userModel
+      .findOne({ email })
+      .exec();
+    if (!foundUser) {
+      throw new NotFoundException('User not found');
+    }
+    return { message: 'User details retrieved', foundUser };
+  }
+
   public async getUserDetailsById(userId: string) {
     // console.log('User:', user);
     const foundUser = await this.userModel
       .findById(userId)
-      .select('-password')
       .exec();
     if (!foundUser) {
       throw new NotFoundException('User not found');

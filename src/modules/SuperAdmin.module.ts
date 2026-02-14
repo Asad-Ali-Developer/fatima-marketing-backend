@@ -1,23 +1,19 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { SuperAdminController } from 'src/controllers';
-import { AuthMiddleware } from 'src/middlewares/Auth.middleware';
+import { JwtCookieAuthGuard } from 'src/guards';
 import { DatabaseProvider } from 'src/provider/DatabaseProvider';
 import { SuperAdminService, UserService } from 'src/services';
 
 @Module({
-  imports: [
-    JwtModule.register({
-      secret: 'fatima-marketing-rehan',
-      signOptions: { expiresIn: '1d' },
-    }),
-  ],
+  imports: [JwtModule.register({})],
   controllers: [SuperAdminController],
-  providers: [SuperAdminService, DatabaseProvider, AuthMiddleware, UserService],
-  exports: [SuperAdminService],
+  providers: [
+    SuperAdminService,
+    DatabaseProvider,
+    UserService,
+    JwtCookieAuthGuard,
+  ],
+  exports: [SuperAdminService, JwtCookieAuthGuard],
 })
-export class SuperAdminModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer.apply(AuthMiddleware).forRoutes(SuperAdminController);
-  }
-}
+export class SuperAdminModule {}

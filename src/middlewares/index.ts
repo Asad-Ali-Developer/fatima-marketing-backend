@@ -1,3 +1,3 @@
-import { AuthMiddleware } from "./Auth.middleware";
+// import { AuthMiddleware } from "./Auth.middleware";
 
-export { AuthMiddleware };
+// export { AuthMiddleware };

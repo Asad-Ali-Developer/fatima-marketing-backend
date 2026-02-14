@@ -8,6 +8,9 @@ import { InventoryService } from './Inventory.service';
 import { ExpenseService } from './Expense.service';
 import { DashboardService } from './Dashboard.service';
 import { SOLeadService } from './SOLead.service';
+import { AuthService } from './Auth.service';
+import { RateLimitService } from './RateLimit.service';
+// import { RedisService } from './Redis.service';
 
 export {
   UserService,
@@ -20,4 +23,7 @@ export {
   ExpenseService,
   DashboardService,
   SOLeadService,
+  AuthService,
+  RateLimitService,
+  // RedisService,
 };
