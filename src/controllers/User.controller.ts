@@ -1,39 +1,39 @@
 import {
-  Body,
-  Controller,
-  Delete,
   Get,
-  InternalServerErrorException,
-  Param,
-  Patch,
-  Post,
   Req,
   Res,
-  UnauthorizedException,
+  Body,
+  Post,
+  Patch,
+  Param,
+  Delete,
   UseGuards,
+  Controller,
+  UnauthorizedException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import {
-  ApiBearerAuth,
   ApiBody,
-  ApiOkResponse,
-  ApiOperation,
-  ApiParam,
   ApiTags,
+  ApiParam,
+  ApiOperation,
+  ApiOkResponse,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import type { Response, Request } from 'express';
 import { Public } from 'src/decorators';
 import {
   LoginUserDto,
-  RegisterAdminDto,
-  RegisterSalesOfficerDto,
-  RegisterUserDto,
-  UpdateSalesOfficerDto,
   UpdateUserDto,
+  RegisterUserDto,
+  RegisterAdminDto,
   UpdateUserProfileDto,
+  UpdateSalesOfficerDto,
+  RegisterSalesOfficerDto,
 } from 'src/DTOs';
-import { JwtCookieAuthGuard } from 'src/guards';
 import { User } from 'src/schemas';
+import { JwtCookieAuthGuard } from 'src/guards';
 import { AuthService, UserService } from 'src/services';
 
 @ApiTags('Authorization')
@@ -277,6 +277,7 @@ export class UserController {
     return this.userService.getUserDetails(req.user);
   }
 
+  @UseGuards(JwtCookieAuthGuard)
   @Get('logout')
   async logout(@Req() req, @Res({ passthrough: true }) res: Response) {
     const userId = req.user?.userId;

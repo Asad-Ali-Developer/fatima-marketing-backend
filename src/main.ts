@@ -54,7 +54,7 @@ async function bootstrap() {
   app.use('/api/v1/auth/register', rateLimitService.authenticationLimiter());
   app.use('/api/v1/auth/refresh', rateLimitService.refreshLimiter());
 
-  // app.use(rateLimitService.globalLimiter());
+  app.use(rateLimitService.globalLimiter());
 
   // Cookie parser and body parsers AFTER rate limiting
   app.use(cookieParser());
