@@ -345,4 +345,74 @@ export class InvoiceService {
     invoice.remarks = remarks; // Can be null/undefined to clear it
     return invoice.save();
   }
+
+  async getInvoicesBySalesOfficer(
+    salesOfficerId: string,
+    page: number = 1,
+    limit: number = 10,
+    filters: {
+      searchTerm?: string;
+      status?: string;
+      dateFrom?: string;
+      dateTo?: string;
+    } = {},
+  ) {
+    const pageNum = Math.max(1, page);
+    const limitNum = Math.min(100, Math.max(1, limit));
+    const skip = (pageNum - 1) * limitNum;
+
+    // Build query to find invoices created by this sales officer
+    const query: any = { 'created_by.id': salesOfficerId };
+
+    // Status filter
+    if (filters.status && filters.status !== 'all') {
+      query.status = filters.status;
+    }
+
+    // Search by customer name, phone, or invoice number
+    if (filters.searchTerm) {
+      const searchRegex = new RegExp(filters.searchTerm, 'i');
+      query.$or = [
+        { customerName: searchRegex },
+        { phoneNumber: { $regex: searchRegex } },
+        { invoice_number: { $regex: searchRegex } },
+      ];
+    }
+
+    // Date range filter
+    if (filters.dateFrom || filters.dateTo) {
+      query.date = {};
+
+      if (filters.dateFrom) {
+        const startDate = new Date(filters.dateFrom);
+        startDate.setHours(0, 0, 0, 0);
+        query.date.$gte = startDate;
+      }
+
+      if (filters.dateTo) {
+        const endDate = new Date(filters.dateTo);
+        endDate.setHours(23, 59, 59, 999);
+        query.date.$lte = endDate;
+      }
+    }
+
+    const total = await this.invoiceModel.countDocuments(query).exec();
+    const data = await this.invoiceModel
+      .find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum)
+      .exec();
+
+    const totalPages = Math.ceil(total / limitNum);
+
+    return {
+      data,
+      total,
+      page: pageNum,
+      totalPages,
+      hasNextPage: pageNum < totalPages,
+      hasPrevPage: pageNum > 1,
+    };
+  }
 }

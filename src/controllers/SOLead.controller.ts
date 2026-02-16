@@ -254,4 +254,45 @@ export class SOLeadController {
       status: true,
     };
   }
+
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get leads created by a specific sales officer with filters',
+  })
+  @UseGuards(JwtCookieAuthGuard)
+  @Get('sales-officer/:salesOfficerId')
+  async getLeadsBySalesOfficer(
+    @Param('salesOfficerId') salesOfficerId: string,
+    @Query('page', ParseIntPipe) page?: number,
+    @Query('limit', ParseIntPipe) limit?: number,
+    @Query('searchTerm') searchTerm?: string,
+    @Query('status') status?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+  ) {
+    const result = await this.soLeadService.getLeadsBySalesOfficer(
+      salesOfficerId,
+      page ?? 1,
+      limit ?? 10,
+      {
+        searchTerm,
+        status,
+        dateFrom,
+        dateTo,
+      },
+    );
+
+    return {
+      message: 'Sales Officer leads retrieved successfully',
+      data: result.data,
+      pagination: {
+        total: result.total,
+        page: result.page,
+        totalPages: result.totalPages,
+        hasNextPage: result.hasNextPage,
+        hasPrevPage: result.hasPrevPage,
+      },
+      status: true,
+    };
+  }
 }

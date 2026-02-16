@@ -4,19 +4,35 @@ import {
   ExecutionContext,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
+import { IS_PUBLIC_KEY } from 'src/decorators';
 
 @Injectable()
 export class JwtCookieAuthGuard implements CanActivate {
-  constructor(private jwtService: JwtService) {}
+  constructor(
+    private jwtService: JwtService,
+    private reflector: Reflector,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    // Check if route is marked @Public()
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
+    // console.log("Is Public Route: ", isPublic)
+
+    if (isPublic) {
+      return true; // Skip auth
+    }
+
     const request = context.switchToHttp().getRequest<Request>();
     const token = request.cookies?.access_token;
 
     if (!token) {
-      // console.log('❌ No token found');
       throw new UnauthorizedException('Access token missing');
     }
 
@@ -24,8 +40,6 @@ export class JwtCookieAuthGuard implements CanActivate {
       const payload = this.jwtService.verify(token, {
         secret: process.env.JWT_ACCESS_SECRET,
       });
-
-      // console.log('✅ Token verified, payload:', payload);
 
       // Attach user to request
       request.user = {
@@ -36,8 +50,7 @@ export class JwtCookieAuthGuard implements CanActivate {
 
       return true;
     } catch (error) {
-      // console.log('❌ Token verification failed:', error);
-      throw new UnauthorizedException('Invalid or expired token');
+      throw new UnauthorizedException('Invalid or expired access token');
     }
   }
 }

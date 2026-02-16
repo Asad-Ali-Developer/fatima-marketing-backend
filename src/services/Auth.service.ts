@@ -33,8 +33,7 @@ export class AuthService {
     });
 
     const refreshToken = this.jwtService.sign(payload, {
-      secret:
-        process.env.JWT_REFRESH_SECRET,
+      secret: process.env.JWT_REFRESH_SECRET,
       expiresIn: '30d', // Keep refresh token long
     });
 
@@ -51,13 +50,13 @@ export class AuthService {
       throw new BadRequestException('Email and password are required');
     }
 
-    const user = await this.userService.getUserDetailsByEmail(email);
-    if (!user) {
+    const res = await this.userService.getUserDetailsByEmail(email);
+    if (!res) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
     // Handle Google OAuth users who have no password
-    if (!user.foundUser.password) {
+    if (!res.foundUser.password) {
       throw new UnauthorizedException(
         'This account uses Google Sign-In. Please log in with Google.',
       );
@@ -65,7 +64,7 @@ export class AuthService {
 
     const isPasswordValid = await bcrypt.compare(
       password,
-      user.foundUser.password,
+      res.foundUser.password,
     );
 
     if (!isPasswordValid) {
@@ -73,13 +72,13 @@ export class AuthService {
     }
 
     const { accessToken, refreshToken } = await this.generateTokens(
-      user.foundUser,
+      res.foundUser,
     );
 
     // Hash and store refresh token in DB
     const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
-    user.foundUser.refreshToken = hashedRefreshToken;
-    await user.foundUser.save();
+    res.foundUser.refreshToken = hashedRefreshToken;
+    await res.foundUser.save();
 
     return { accessToken, refreshToken };
   }

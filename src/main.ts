@@ -11,7 +11,7 @@ import { allowedHeaders, allowedOrigins } from './utils';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bodyParser: false });
 
-   // Get rate limiting service from app context
+  // Get rate limiting service from app context
   const rateLimitService = app.get(RateLimitService);
 
   // Enable CORS
@@ -48,7 +48,7 @@ async function bootstrap() {
 
   // Set global API prefix
   app.setGlobalPrefix('api/v1');
-  
+
   // Apply specific limiters BEFORE global limiter
   app.use('/api/v1/auth/login', rateLimitService.authenticationLimiter());
   app.use('/api/v1/auth/register', rateLimitService.authenticationLimiter());

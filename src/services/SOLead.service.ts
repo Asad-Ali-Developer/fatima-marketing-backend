@@ -4,7 +4,12 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Model } from 'mongoose';
-import { SOCreateLeadDto, SOLeadStatus, SOUpdateLeadDto, UpdateLeadDto } from 'src/DTOs';
+import {
+  SOCreateLeadDto,
+  SOLeadStatus,
+  SOUpdateLeadDto,
+  UpdateLeadDto,
+} from 'src/DTOs';
 import { DatabaseProvider } from 'src/provider/DatabaseProvider';
 import { SOLeadDocument, SOLeadSchema } from 'src/schemas';
 import { UserService } from './User.service';
@@ -240,6 +245,73 @@ export class SOLeadService {
     const data = await this.leadModel
       .find(query)
       .populate('createdBy', 'name email')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum)
+      .exec();
+
+    const totalPages = Math.ceil(total / limitNum);
+
+    return {
+      data,
+      total,
+      page: pageNum,
+      totalPages,
+      hasNextPage: pageNum < totalPages,
+      hasPrevPage: pageNum > 1,
+    };
+  }
+
+  async getLeadsBySalesOfficer(
+    salesOfficerId: string,
+    page: number = 1,
+    limit: number = 10,
+    filters: {
+      searchTerm?: string;
+      status?: string;
+      dateFrom?: string;
+      dateTo?: string;
+    } = {},
+  ) {
+    const pageNum = Math.max(1, page);
+    const limitNum = Math.min(100, Math.max(1, limit));
+    const skip = (pageNum - 1) * limitNum;
+
+    // Build query to find leads created by this sales officer
+    const query: any = { 'createdBy.id': salesOfficerId };
+
+    // Status filter
+    if (filters.status && filters.status !== 'all') {
+      query.status = filters.status;
+    }
+
+    // Search by user name or phone
+    if (filters.searchTerm) {
+      const regex = new RegExp(filters.searchTerm, 'i');
+      query.$or = [{ userName: regex }, { phoneNumber: { $regex: regex } }];
+    }
+
+    // Date range filter
+    if (filters.dateFrom || filters.dateTo) {
+      query.time = {};
+
+      if (filters.dateFrom) {
+        const startDate = new Date(filters.dateFrom);
+        startDate.setHours(0, 0, 0, 0);
+        query.time.$gte = startDate;
+      }
+
+      if (filters.dateTo) {
+        const endDate = new Date(filters.dateTo);
+        endDate.setHours(23, 59, 59, 999);
+        query.time.$lte = endDate;
+      }
+    }
+
+    const total = await this.leadModel.countDocuments(query).exec();
+    const data = await this.leadModel
+      .find(query)
+      .populate('createdBy', 'full_name email')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limitNum)

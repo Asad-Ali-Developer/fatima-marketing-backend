@@ -21,8 +21,6 @@ import {
   ApiOkResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import type { Response, Request } from 'express';
-import { Public } from 'src/decorators';
 import {
   LoginUserDto,
   UpdateUserDto,
@@ -33,7 +31,9 @@ import {
   RegisterSalesOfficerDto,
 } from 'src/DTOs';
 import { User } from 'src/schemas';
+import { Public } from 'src/decorators';
 import { JwtCookieAuthGuard } from 'src/guards';
+import type { Response, Request } from 'express';
 import { AuthService, UserService } from 'src/services';
 
 @ApiTags('Authorization')
@@ -146,47 +146,40 @@ export class UserController {
   }
 
   @Public()
+  @UseGuards(JwtCookieAuthGuard)
   @Post('login')
   async loginUser(
     @Body() loginUserDto: LoginUserDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    try {
-      const { accessToken, refreshToken } =
-        await this.authService.login(loginUserDto);
+    const { accessToken, refreshToken } =
+      await this.authService.login(loginUserDto);
 
-      if (!accessToken) {
-        throw new UnauthorizedException('Failed to generate access token');
-      }
+    // ✅ Only set cookies & return on success
+    res.cookie('access_token', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 15 * 60 * 1000, // 15 minutes
+    });
 
-      // Set accessToken
-      res.cookie('access_token', accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 1 * 60 * 1000, // 1 minute for testing
-      });
+    res.cookie('refresh_token', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    });
 
-      // Set refreshToken - FIXED: sameSite: 'lax'
-      res.cookie('refresh_token', refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax', // ✅ Fixed: was 'strict'
-        path: '/',
-        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-      });
-
-      return {
-        message: 'Logged in successfully',
-        status: true,
-      };
-    } catch (error: any) {
-      throw new UnauthorizedException('Invalid Credentials');
-    }
+    return {
+      message: 'Logged in successfully',
+      status: true,
+    };
   }
 
   @Public()
+  @UseGuards(JwtCookieAuthGuard)
   @Get('refresh')
   async refresh(
     @Req() req: Request,
@@ -236,14 +229,12 @@ export class UserController {
   @Public()
   @UseGuards(AuthGuard('google'))
   @ApiOperation({ summary: 'Google login' })
-  @UseGuards(JwtCookieAuthGuard)
   @Get('google/login')
   googleLogin(@Req() _req) {}
 
   @Public()
   @UseGuards(AuthGuard('google'))
   @ApiOperation({ summary: 'Google callback' })
-  @UseGuards(JwtCookieAuthGuard)
   @Get('google/callback')
   async googleCallback(@Req() req, @Res({ passthrough: true }) res: Response) {
     const { accessToken } = await this.userService.googleLogin(req.user);
