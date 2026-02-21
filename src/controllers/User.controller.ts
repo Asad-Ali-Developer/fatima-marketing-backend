@@ -146,13 +146,12 @@ export class UserController {
   }
 
   @Public()
-  @UseGuards(JwtCookieAuthGuard)
   @Post('login')
   async loginUser(
     @Body() loginUserDto: LoginUserDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { accessToken, refreshToken } =
+    const { accessToken, refreshToken, user } =
       await this.authService.login(loginUserDto);
 
     // ✅ Only set cookies & return on success
@@ -175,6 +174,7 @@ export class UserController {
     return {
       message: 'Logged in successfully',
       status: true,
+      user,
     };
   }
 

@@ -80,7 +80,7 @@ export class AuthService {
     res.foundUser.refreshToken = hashedRefreshToken;
     await res.foundUser.save();
 
-    return { accessToken, refreshToken };
+    return { accessToken, refreshToken, user: res.foundUser };
   }
 
   /**
