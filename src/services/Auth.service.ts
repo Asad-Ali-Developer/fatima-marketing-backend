@@ -1,12 +1,11 @@
 import {
-  BadRequestException,
   Injectable,
-  NotFoundException,
+  BadRequestException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { LoginUserDto } from 'src/DTOs';
+import { JwtService } from '@nestjs/jwt';
 import { UserDocument } from 'src/schemas';
 import { UserService } from './User.service';
 
@@ -44,7 +43,7 @@ export class AuthService {
    * Login with email/password → returns tokens + sets cookies
    */
   async login(loginUserDto: LoginUserDto) {
-    const { email, password, rememberMe = false } = loginUserDto;
+    const { email, password } = loginUserDto;
 
     if (!email || !password) {
       throw new BadRequestException('Email and password are required');
@@ -55,7 +54,6 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Handle Google OAuth users who have no password
     if (!res.foundUser.password) {
       throw new UnauthorizedException(
         'This account uses Google Sign-In. Please log in with Google.',
@@ -75,9 +73,10 @@ export class AuthService {
       res.foundUser,
     );
 
-    // Hash and store refresh token in DB
     const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
-    res.foundUser.refreshToken = hashedRefreshToken;
+
+    // ✅ Push instead of overwrite
+    res.foundUser?.refreshTokens?.push(hashedRefreshToken);
     await res.foundUser.save();
 
     return { accessToken, refreshToken, user: res.foundUser };
@@ -93,22 +92,38 @@ export class AuthService {
       });
 
       const user = await this.userService.getUserDetailsById(payload.sub);
-      if (!user || !user.refreshToken) {
+
+      if (!user || !user.refreshTokens?.length) {
         throw new UnauthorizedException('Invalid refresh token');
       }
 
-      const isValid = await bcrypt.compare(refreshToken, user.refreshToken);
-      if (!isValid) {
+      // 🔎 Find matching token
+      let matchedTokenIndex = -1;
+
+      for (let i = 0; i < user.refreshTokens.length; i++) {
+        const isMatch = await bcrypt.compare(
+          refreshToken,
+          user.refreshTokens[i],
+        );
+        if (isMatch) {
+          matchedTokenIndex = i;
+          break;
+        }
+      }
+
+      if (matchedTokenIndex === -1) {
         throw new UnauthorizedException('Invalid refresh token');
       }
 
-      // Rotate tokens: issue new pair
+      // 🔁 Rotate tokens (per device rotation)
       const { accessToken, refreshToken: newRefreshToken } =
         await this.generateTokens(user);
 
-      // Update DB with new hashed refresh token
       const hashedNewRefreshToken = await bcrypt.hash(newRefreshToken, 10);
-      user.refreshToken = hashedNewRefreshToken;
+
+      // Replace only this device's token
+      user.refreshTokens[matchedTokenIndex] = hashedNewRefreshToken;
+
       await user.save();
 
       return { accessToken, refreshToken: newRefreshToken };
@@ -118,15 +133,20 @@ export class AuthService {
     }
   }
 
-  /**
-   * Logout: clear refresh token from DB
-   */
-  async logout(userId: string) {
+  async logout(userId: string, refreshToken: string) {
     const user = await this.userService.getUserDetailsById(userId);
-    if (!user) {
-      throw new NotFoundException('User not found');
+
+    if (!user || !user.refreshTokens?.length) {
+      throw new UnauthorizedException('User not found');
     }
-    user.refreshToken = undefined;
+
+    user.refreshTokens = await Promise.all(
+      user.refreshTokens.filter(async (token) => {
+        const isMatch = await bcrypt.compare(refreshToken, token);
+        return !isMatch;
+      }),
+    );
+
     await user.save();
   }
 }

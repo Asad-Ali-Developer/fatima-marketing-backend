@@ -2,10 +2,10 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import { Lead, leadSchema } from './Lead.schema';
 
-export type InvoiceDocument = Invoice & Document;
+export type AdminInvoiceDocument = AdminInvoice & Document;
 
 @Schema({ timestamps: true })
-export class Invoice {
+export class AdminInvoice {
   _id: string; // Explicitly define _id for clarity
 
   @Prop({ required: true })
@@ -95,4 +95,4 @@ export class Invoice {
   updatedAt?: Date;
 }
 
-export const InvoiceSchema = SchemaFactory.createForClass(Invoice);
+export const AdminInvoiceSchema = SchemaFactory.createForClass(AdminInvoice);

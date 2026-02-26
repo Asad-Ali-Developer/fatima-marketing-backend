@@ -6,6 +6,9 @@ export type SOLeadDocument = HydratedDocument<SOLead>;
 
 @Schema({ timestamps: true })
 export class SOLead {
+
+  _id?: string; // Explicitly define _id for clarity
+
   @Prop({ required: true })
   userName: string;
 
@@ -17,6 +20,9 @@ export class SOLead {
 
   @Prop({ required: true })
   time: Date; // stored as Date in DB
+
+  @Prop({ required: false })
+  invoice_id?: string; // stored as string in DB
 
   @Prop({
     type: String,

@@ -6,6 +6,9 @@ export type LeadDocument = HydratedDocument<Lead>;
 
 @Schema({ timestamps: true })
 export class Lead {
+
+  _id?: string; // Explicitly define _id for clarity
+
   @Prop({ required: true })
   userName: string;
 
@@ -14,6 +17,9 @@ export class Lead {
 
   @Prop()
   location?: string;
+
+  @Prop()
+  invoice_id?: string;
 
   @Prop({ required: true })
   time: Date; // stored as Date in DB

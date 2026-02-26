@@ -4,36 +4,37 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Model } from 'mongoose';
-import { CreateInvoiceDto, UpdateInvoiceApprovalDto } from 'src/DTOs';
+import { CreateAdminInvoiceDto, UpdateAdminInvoiceApprovalDto } from 'src/DTOs';
 import { DatabaseProvider } from 'src/provider/DatabaseProvider';
-import { Invoice, InvoiceDocument, InvoiceSchema } from 'src/schemas';
-import { SOLeadService } from './SOLead.service';
+import {
+  AdminInvoice,
+  AdminInvoiceDocument,
+  AdminInvoiceSchema,
+} from 'src/schemas';
+import { LeadService } from './Lead.service';
 import { UserService } from './User.service';
 
 @Injectable()
-export class InvoiceService {
-  private invoiceModel: Model<InvoiceDocument>;
-  private soLeadService: SOLeadService;
+export class AdminInvoiceService {
+  private adminInvoiceModel: Model<AdminInvoiceDocument>;
+  private leadService: LeadService;
 
   constructor(
     private databaseProvider: DatabaseProvider,
     private userService: UserService,
   ) {
     const connection = this.databaseProvider.getConnection();
-    this.invoiceModel = connection.model<InvoiceDocument>(
-      'Invoice',
-      InvoiceSchema,
+    this.adminInvoiceModel = connection.model<AdminInvoiceDocument>(
+      'AdminInvoice',
+      AdminInvoiceSchema,
     );
-    this.soLeadService = new SOLeadService(
-      this.databaseProvider,
-      this.userService,
-    );
+    this.leadService = new LeadService(this.databaseProvider, this.userService);
   }
 
-  async createInvoice(
+  async createAdminInvoice(
     userId: string,
-    createInvoiceDto: CreateInvoiceDto,
-  ): Promise<InvoiceDocument> {
+    createInvoiceDto: CreateAdminInvoiceDto,
+  ): Promise<AdminInvoiceDocument> {
     console.log('USERID inside the service: ', userId);
     console.log('Invoice DTO: ', createInvoiceDto);
 
@@ -64,9 +65,9 @@ export class InvoiceService {
       },
     };
 
-    const invoice = new this.invoiceModel(invoiceData);
+    const invoice = new this.adminInvoiceModel(invoiceData);
     console.log('Invoice before saving: ', invoice);
-    await this.soLeadService.updateInvoiceId(
+    await this.leadService.updateAdminInvoiceId(
       createInvoiceDto.lead_id as string,
       invoice._id.toString(),
     );
@@ -114,8 +115,8 @@ export class InvoiceService {
       query.date = { $gte: start, $lte: end };
     }
 
-    const total = await this.invoiceModel.countDocuments(query).exec();
-    const data = await this.invoiceModel
+    const total = await this.adminInvoiceModel.countDocuments(query).exec();
+    const data = await this.adminInvoiceModel
       .find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -199,8 +200,8 @@ export class InvoiceService {
       if (endDate) query.date.$lte = endDate;
     }
 
-    const total = await this.invoiceModel.countDocuments(query).exec();
-    const data = await this.invoiceModel
+    const total = await this.adminInvoiceModel.countDocuments(query).exec();
+    const data = await this.adminInvoiceModel
       .find(query)
       .sort({ createdAt: -1 })
       .exec();
@@ -211,7 +212,7 @@ export class InvoiceService {
     };
   }
 
-  async getInvoicesReportedToAdmin(
+  async getAdminInvoicesReportedToAdmin(
     adminId: string,
     page: number = 1,
     limit: number = 10,
@@ -251,8 +252,8 @@ export class InvoiceService {
       query.date = { $gte: start, $lte: end };
     }
 
-    const total = await this.invoiceModel.countDocuments(query).exec();
-    const data = await this.invoiceModel
+    const total = await this.adminInvoiceModel.countDocuments(query).exec();
+    const data = await this.adminInvoiceModel
       .find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -271,13 +272,13 @@ export class InvoiceService {
     };
   }
 
-  async updateInvoiceApprovalStatus(
+  async updateAdminInvoiceApprovalStatus(
     invoiceId: string,
     adminId: string,
-    updateDto: UpdateInvoiceApprovalDto,
-  ): Promise<InvoiceDocument> {
+    updateDto: UpdateAdminInvoiceApprovalDto,
+  ): Promise<AdminInvoiceDocument> {
     // Ensure invoice exists and belongs to this admin
-    const invoice = await this.invoiceModel.findOne({
+    const invoice = await this.adminInvoiceModel.findOne({
       _id: invoiceId,
       'reported_to.id': adminId,
     });
@@ -299,8 +300,8 @@ export class InvoiceService {
   async findByIdAndUser(
     invoiceId: string,
     userId: string,
-  ): Promise<InvoiceDocument> {
-    const invoice = await this.invoiceModel
+  ): Promise<AdminInvoiceDocument> {
+    const invoice = await this.adminInvoiceModel
       .findOne({
         _id: invoiceId,
         'created_by.id': userId,
@@ -313,11 +314,11 @@ export class InvoiceService {
     return invoice;
   }
 
-  async updateInvoice(
+  async updateAdminInvoice(
     invoiceId: string,
     userId: string,
-    updateDto: Partial<Invoice>,
-  ): Promise<InvoiceDocument> {
+    updateDto: Partial<AdminInvoice>,
+  ): Promise<AdminInvoiceDocument> {
     const invoice = await this.findByIdAndUser(invoiceId, userId);
 
     Object.assign(invoice, updateDto);
@@ -328,22 +329,22 @@ export class InvoiceService {
     return invoice.save();
   }
 
-  async deleteInvoice(invoiceId: string, userId: string): Promise<void> {
-    const result = await this.invoiceModel
+  async deleteAdminInvoice(invoiceId: string, userId: string): Promise<void> {
+    const result = await this.adminInvoiceModel
       .deleteOne({
         _id: invoiceId,
         'created_by.id': userId,
       })
       .exec();
 
-    const invoice = await this.invoiceModel.findById(invoiceId).exec();
+    const invoice = await this.adminInvoiceModel.findById(invoiceId).exec();
     if (!invoice) {
       throw new NotFoundException('Invoice not found');
     }
 
     // Update any leads associated with this invoice ID
     if (invoice.generatedByLead?._id) {
-      await this.soLeadService.updateLeadWhenDeletingInvoice(
+      await this.leadService.updateAdminLeadWhenDeletingInvoice(
         invoice.generatedByLead._id,
         invoiceId,
       );
@@ -356,11 +357,11 @@ export class InvoiceService {
     }
   }
 
-  async updateInvoiceRemarks(
+  async updateAdminInvoiceRemarks(
     invoiceId: string,
     userId: string,
     remarks: string | undefined,
-  ): Promise<InvoiceDocument> {
+  ): Promise<AdminInvoiceDocument> {
     const invoice = await this.findByIdAndUser(invoiceId, userId);
 
     invoice.remarks = remarks; // Can be null/undefined to clear it
@@ -417,8 +418,8 @@ export class InvoiceService {
       }
     }
 
-    const total = await this.invoiceModel.countDocuments(query).exec();
-    const data = await this.invoiceModel
+    const total = await this.adminInvoiceModel.countDocuments(query).exec();
+    const data = await this.adminInvoiceModel
       .find(query)
       .sort({ createdAt: -1 })
       .skip(skip)

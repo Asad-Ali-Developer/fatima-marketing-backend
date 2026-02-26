@@ -4,12 +4,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Model } from 'mongoose';
-import {
-  SOCreateLeadDto,
-  SOLeadStatus,
-  SOUpdateLeadDto,
-  UpdateLeadDto,
-} from 'src/DTOs';
+import { SOCreateLeadDto, SOLeadStatus, SOUpdateLeadDto } from 'src/DTOs';
 import { DatabaseProvider } from 'src/provider/DatabaseProvider';
 import { SOLeadDocument, SOLeadSchema } from 'src/schemas';
 import { UserService } from './User.service';
@@ -38,6 +33,7 @@ export class SOLeadService {
 
     const lead = new this.leadModel({
       ...soCreateLeadDto,
+      invoice_id: '',
       time: new Date(soCreateLeadDto.time),
     });
 
@@ -327,5 +323,59 @@ export class SOLeadService {
       hasNextPage: pageNum < totalPages,
       hasPrevPage: pageNum > 1,
     };
+  }
+
+  async updateInvoiceId(
+    leadId: string,
+    invoiceId: string,
+  ): Promise<SOLeadDocument> {
+    console.log(`Updating lead ${leadId} with invoice ID: ${invoiceId}`);
+
+    if (!invoiceId || invoiceId.trim() === '') {
+      throw new NotFoundException('Invoice ID is required');
+    }
+
+    const lead = await this.leadModel
+      .findByIdAndUpdate(
+        leadId,
+        { invoice_id: invoiceId },
+        { new: true, runValidators: true },
+      )
+      .exec();
+
+    console.log(`Lead after update: ${JSON.stringify(lead)}`);
+
+    if (!lead) {
+      throw new NotFoundException('Lead not found');
+    }
+
+    return lead;
+  }
+
+  async updateLeadWhenDeletingInvoice(
+    leadId: string,
+    invoiceId: string,
+  ): Promise<SOLeadDocument> {
+    console.log(`Updating lead ${leadId} with invoice ID: ${invoiceId}`);
+
+    if (!invoiceId || invoiceId.trim() === '') {
+      throw new NotFoundException('Invoice ID is required');
+    }
+
+    const lead = await this.leadModel
+      .findByIdAndUpdate(
+        leadId,
+        { invoice_id: "" },
+        { new: true, runValidators: true },
+      )
+      .exec();
+
+    console.log(`Lead after update: ${JSON.stringify(lead)}`);
+
+    if (!lead) {
+      throw new NotFoundException('Lead not found');
+    }
+
+    return lead;
   }
 }

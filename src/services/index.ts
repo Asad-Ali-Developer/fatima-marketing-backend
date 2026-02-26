@@ -11,6 +11,7 @@ import { SOLeadService } from './SOLead.service';
 import { AuthService } from './Auth.service';
 import { RateLimitService } from './RateLimit.service';
 // import { RedisService } from './Redis.service';
+import { AdminInvoiceService } from './AdminInvoice.service';
 
 export {
   UserService,
@@ -26,4 +27,5 @@ export {
   AuthService,
   RateLimitService,
   // RedisService,
+  AdminInvoiceService,
 };

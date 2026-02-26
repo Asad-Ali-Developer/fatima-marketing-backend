@@ -29,6 +29,9 @@ export class User {
   @Prop()
   refreshToken?: string;
 
+  @Prop({ type: [String], default: [] })
+  refreshTokens?: string[];
+
   @Prop({
     type: {
       role_type: {

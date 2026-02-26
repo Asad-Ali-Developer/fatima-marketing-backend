@@ -9,6 +9,7 @@ import {
   DashboardModule,
   SuperAdminModule,
   SalesOfficerModule,
+  AdminInvoiceModule,
 } from './modules';
 
 import { Module } from '@nestjs/common';
@@ -28,6 +29,7 @@ import { RateLimitService } from './services';
     InventoryModule,
     SuperAdminModule,
     SalesOfficerModule,
+    AdminInvoiceModule,
   ],
   providers: [AppService, RateLimitService],
   controllers: [AppController],

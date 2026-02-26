@@ -8,6 +8,7 @@ import { InventoryController } from './Inventory.controller';
 import { ExpenseController } from './Expense.controller';
 import { DashboardController } from './Dashboard.controller';
 import { SOLeadController } from './SOLead.controller';
+import { AdminInvoiceController } from './AdminInvoice.controller';
 
 export {
   UserController,
@@ -20,4 +21,5 @@ export {
   ExpenseController,
   DashboardController,
   SOLeadController,
+  AdminInvoiceController,
 };

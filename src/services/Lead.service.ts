@@ -15,7 +15,6 @@ import {
   LeadDocument,
 } from 'src/schemas';
 import { UserService } from './User.service';
-import { Types } from 'mongoose';
 
 @Injectable()
 export class LeadService {
@@ -369,5 +368,59 @@ export class LeadService {
       hasNextPage: pageNum < totalPages,
       hasPrevPage: pageNum > 1,
     };
+  }
+
+  async updateAdminInvoiceId(
+    leadId: string,
+    invoiceId: string,
+  ): Promise<LeadDocument> {
+    console.log(`Updating lead ${leadId} with invoice ID: ${invoiceId}`);
+
+    if (!invoiceId || invoiceId.trim() === '') {
+      throw new NotFoundException('Invoice ID is required');
+    }
+
+    const lead = await this.leadModel
+      .findByIdAndUpdate(
+        leadId,
+        { invoice_id: invoiceId },
+        { new: true },
+      )
+      .exec();
+
+    console.log(`Lead after update: ${JSON.stringify(lead)}`);
+
+    if (!lead) {
+      throw new NotFoundException('Lead not found');
+    }
+
+    return lead;
+  }
+
+  async updateAdminLeadWhenDeletingInvoice(
+    leadId: string,
+    invoiceId: string,
+  ): Promise<LeadDocument> {
+    console.log(`Updating lead ${leadId} with invoice ID: ${invoiceId}`);
+
+    if (!invoiceId || invoiceId.trim() === '') {
+      throw new NotFoundException('Invoice ID is required');
+    }
+
+    const lead = await this.leadModel
+      .findByIdAndUpdate(
+        leadId,
+        { invoice_id: '' },
+        { new: true, runValidators: true },
+      )
+      .exec();
+
+    console.log(`Lead after update: ${JSON.stringify(lead)}`);
+
+    if (!lead) {
+      throw new NotFoundException('Lead not found');
+    }
+
+    return lead;
   }
 }

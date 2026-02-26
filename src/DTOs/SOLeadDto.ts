@@ -35,10 +35,14 @@ export class SOCreateLeadDto {
   @IsOptional()
   @IsString()
   phoneNumber?: string;
-  
+
   @IsOptional()
   @IsString()
   location?: string;
+
+  @IsOptional()
+  @IsString()
+  invoice_id?: string;
 
   @IsNotEmpty()
   @IsString()
@@ -65,4 +69,10 @@ export class SOUpdateLeadStatusDto {
   @IsOptional()
   @IsEnum(SOLeadStatus) // ✅ Correct validator for enum
   status: SOLeadStatus;
+}
+
+export class SOUpdateInvoiceDto {
+  @IsString()
+  @IsNotEmpty()
+  invoice_id: string;
 }

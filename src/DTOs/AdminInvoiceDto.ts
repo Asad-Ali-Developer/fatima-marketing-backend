@@ -10,7 +10,7 @@ import {
 } from 'class-validator';
 import { Lead } from 'src/schemas';
 
-export class CreateInvoiceDto {
+export class CreateAdminInvoiceDto {
   @IsString()
   @IsNotEmpty()
   customerName: string;
@@ -56,7 +56,7 @@ export class CreateInvoiceDto {
   generatedByLead?: Lead;
 }
 
-export class UpdateInvoiceDto {
+export class UpdateAdminInvoiceDto {
   @IsString()
   @IsNotEmpty()
   customerName: string;
@@ -84,13 +84,13 @@ export class UpdateInvoiceDto {
   status: 'pending' | 'received_so' | 'completed';
 }
 
-export class UpdateInvoiceApprovalDto {
+export class UpdateAdminInvoiceApprovalDto {
   @IsString()
   @IsIn(['pending', 'approved', 'rejected'])
   admin_approval_status: 'pending' | 'approved' | 'rejected';
 }
 
-export class UpdateInvoiceRemarksDto {
+export class UpdateAdminInvoiceRemarksDto {
   @IsString()
   @IsOptional()
   remarks?: string;

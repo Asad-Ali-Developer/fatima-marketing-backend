@@ -1,6 +1,11 @@
 import { UserSchema } from './User.schemas';
 import { InvoiceSchema } from './Invoice.schema';
 import { InvoiceDocument, Invoice } from './Invoice.schema';
+import {
+  AdminInvoice,
+  AdminInvoiceDocument,
+  AdminInvoiceSchema,
+} from './AdminInvoice.schema';
 import { UserDocument, User } from './User.schemas';
 import { Lead, LeadDocument, leadSchema } from './Lead.schema';
 import {
@@ -12,24 +17,27 @@ import { SOLeadDocument, SOLead, SOLeadSchema } from './SOLead.schema';
 import { Expense, ExpenseDocument, ExpenseSchema } from './Expense';
 
 export {
-  UserSchema,
   User,
-  InvoiceSchema,
-  leadSchema,
-  Inventory,
-  InventorySchema,
-  Expense,
-  ExpenseSchema,
   SOLead,
+  Expense,
+  Inventory,
+  UserSchema,
+  leadSchema,
   SOLeadSchema,
+  AdminInvoice,
+  InvoiceSchema,
+  ExpenseSchema,
+  InventorySchema,
+  AdminInvoiceSchema,
 };
 export type {
-  UserDocument,
-  InvoiceDocument,
-  Invoice,
   Lead,
+  Invoice,
   LeadDocument,
-  InventoryDocument,
-  ExpenseDocument,
+  UserDocument,
   SOLeadDocument,
+  ExpenseDocument,
+  InvoiceDocument,
+  InventoryDocument,
+  AdminInvoiceDocument,
 };

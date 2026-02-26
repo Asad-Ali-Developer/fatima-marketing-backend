@@ -272,11 +272,13 @@ export class UserController {
   @Get('logout')
   async logout(@Req() req, @Res({ passthrough: true }) res: Response) {
     const userId = req.user?.userId;
-    if (!userId) {
+    const refreshToken = req.cookies?.refresh_token;
+
+    if (!userId || !refreshToken) {
       throw new UnauthorizedException();
     }
-
-    await this.authService.logout(userId);
+    
+    await this.authService.logout(userId, refreshToken);
 
     res.clearCookie('access_token');
     res.clearCookie('refresh_token');
