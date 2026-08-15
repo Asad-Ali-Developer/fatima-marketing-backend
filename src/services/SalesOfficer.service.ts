@@ -7,17 +7,17 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { Model, PipelineStage } from 'mongoose';
-import { DatabaseProvider } from 'src/provider/DatabaseProvider';
+import { DatabaseProvider } from '../provider';
+import { SOLeadStatus } from '../DTOs';
 import {
   InvoiceDocument,
   InvoiceSchema,
+  SOLeadDocument,
+  SOLeadSchema,
   User,
   UserDocument,
   UserSchema,
-  SOLeadDocument,
-  SOLeadSchema,
-} from 'src/schemas';
-import { SOLeadStatus } from 'src/DTOs';
+} from '../schemas';
 
 @Injectable()
 export class SalesOfficerService {
@@ -27,12 +27,17 @@ export class SalesOfficerService {
 
   constructor(private databaseProvider: DatabaseProvider) {
     const connection = this.databaseProvider.getConnection();
-    this.userModel = connection.model<UserDocument>(User.name, UserSchema);
-    this.invoiceModel = connection.model<InvoiceDocument>(
-      'Invoice',
-      InvoiceSchema,
-    );
-    this.soLeadModel = connection.model<SOLeadDocument>('SOLead', SOLeadSchema);
+    this.userModel =
+      (connection.models[User.name] as Model<UserDocument>) ||
+      connection.model<UserDocument>(User.name, UserSchema);
+
+    this.invoiceModel =
+      (connection.models['Invoice'] as Model<InvoiceDocument>) ||
+      connection.model<InvoiceDocument>('Invoice', InvoiceSchema);
+
+    this.soLeadModel =
+      (connection.models['SOLead'] as Model<SOLeadDocument>) ||
+      connection.model<SOLeadDocument>('SOLead', SOLeadSchema);
   }
 
   /**

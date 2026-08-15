@@ -1,12 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
-import { SOLeadStatus } from 'src/DTOs';
+import { SOLeadStatus } from '../DTOs';
 
 export type SOLeadDocument = HydratedDocument<SOLead>;
 
 @Schema({ timestamps: true })
 export class SOLead {
-
   _id?: string; // Explicitly define _id for clarity
 
   @Prop({ required: true })

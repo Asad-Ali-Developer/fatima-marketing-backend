@@ -1,11 +1,12 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { HydratedDocument, Schema as MongooseSchema } from 'mongoose';
 import { Lead, leadSchema } from './Lead.schema';
 
-export type AdminInvoiceDocument = AdminInvoice & Document;
+export type AdminInvoiceDocument = HydratedDocument<AdminInvoice>;
 
 @Schema({ timestamps: true })
 export class AdminInvoice {
+  @Prop({ type: String })
   _id: string; // Explicitly define _id for clarity
 
   @Prop({ required: true })
@@ -36,7 +37,7 @@ export class AdminInvoice {
   property_type?: string;
 
   @Prop({ required: true, type: Date })
-  date: Date; // Invoice date (not createdAt)
+  date: Date;
 
   @Prop({
     required: true,
@@ -51,7 +52,7 @@ export class AdminInvoice {
       email: { type: String, required: true },
       name: { type: String, required: true },
     },
-    _id: false, // prevents Mongoose from auto-adding _id to this subdoc
+    _id: false,
     required: true,
   })
   created_by: {
@@ -72,7 +73,7 @@ export class AdminInvoice {
       },
       approved_at: { type: Date, default: null },
     },
-    _id: false, // prevents Mongoose from auto-adding _id to this subdoc
+    _id: false,
     required: true,
   })
   reported_to: {
@@ -83,11 +84,9 @@ export class AdminInvoice {
     approved_at: Date | null;
   };
 
-  // 👇 ADD THIS: Embedded Lead subdocument
   @Prop({ type: leadSchema, _id: false })
   generatedByLead?: Lead;
 
-  // 👇 Add these for TypeScript compatibility
   @Prop({ type: Date, default: () => new Date() })
   createdAt?: Date;
 
@@ -96,3 +95,6 @@ export class AdminInvoice {
 }
 
 export const AdminInvoiceSchema = SchemaFactory.createForClass(AdminInvoice);
+
+export const typedAdminInvoiceSchema =
+  AdminInvoiceSchema as unknown as MongooseSchema<AdminInvoiceDocument>;

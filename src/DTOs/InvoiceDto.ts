@@ -8,7 +8,7 @@ import {
   Min,
   IsIn,
 } from 'class-validator';
-import { Lead } from 'src/schemas';
+import { Lead } from "../schemas"
 
 export class CreateInvoiceDto {
   @IsString()

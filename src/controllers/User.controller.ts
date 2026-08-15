@@ -317,7 +317,7 @@ export class UserController {
   async updateUser(
     @Req() req,
     @Body() updateUserDto: UpdateUserDto,
-  ): Promise<User> {
+  ): Promise<Omit<User, 'password' | 'showPassword'>> {
     const userId = req.user.userId;
     if (!userId) {
       throw new UnauthorizedException('User not authenticated');

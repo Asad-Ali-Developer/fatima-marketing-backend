@@ -4,11 +4,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Model } from 'mongoose';
-import { CreateInvoiceDto, UpdateInvoiceApprovalDto } from 'src/DTOs';
-import { DatabaseProvider } from 'src/provider/DatabaseProvider';
-import { Invoice, InvoiceDocument, InvoiceSchema } from 'src/schemas';
 import { SOLeadService } from './SOLead.service';
 import { UserService } from './User.service';
+import { InvoiceDocument, typedInvoiceSchema } from '../schemas';
+import { CreateInvoiceDto, UpdateInvoiceApprovalDto, UpdateInvoiceDto } from '../DTOs';
+import { DatabaseProvider } from '../provider';
 
 @Injectable()
 export class InvoiceService {
@@ -21,9 +21,9 @@ export class InvoiceService {
   ) {
     const connection = this.databaseProvider.getConnection();
     this.invoiceModel = connection.model<InvoiceDocument>(
-      'Invoice',
-      InvoiceSchema,
-    );
+  'Invoice',
+  typedInvoiceSchema,
+)
     this.soLeadService = new SOLeadService(
       this.databaseProvider,
       this.userService,
@@ -316,7 +316,7 @@ export class InvoiceService {
   async updateInvoice(
     invoiceId: string,
     userId: string,
-    updateDto: Partial<Invoice>,
+    updateDto: Partial<UpdateInvoiceDto>,
   ): Promise<InvoiceDocument> {
     const invoice = await this.findByIdAndUser(invoiceId, userId);
 
