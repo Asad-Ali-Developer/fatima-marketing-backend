@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -24,10 +25,12 @@ import {
   startOfMonth,
 } from 'date-fns';
 import { PipelineStage } from 'mongoose';
+import { LeadDocument, leadSchema } from '../schemas';
 
 @Injectable()
 export class AdminService {
   private userModel: Model<UserDocument>;
+  private leadModel: Model<LeadDocument>;
   private invoiceModel: Model<InvoiceDocument>;
 
   constructor(private databaseProvider: DatabaseProvider) {
@@ -37,6 +40,7 @@ export class AdminService {
       'Invoice',
       InvoiceSchema,
     );
+    this.leadModel = connection.model<LeadDocument>('Lead', leadSchema);
   }
 
   /**
@@ -394,5 +398,141 @@ export class AdminService {
       hasNextPage: pageNum < totalPages,
       hasPrevPage: pageNum > 1,
     };
+  }
+
+  /**
+   * Resolve a start/end date range from a period keyword or explicit custom dates.
+   */
+  private resolveDateRange(filters: {
+    period: 'daily' | 'weekly' | 'monthly' | 'custom';
+    from?: string;
+    to?: string;
+  }): { startDate: Date; endDate: Date } {
+    const now = new Date();
+
+    switch (filters.period) {
+      case 'daily':
+        return { startDate: startOfDay(now), endDate: endOfDay(now) };
+      case 'weekly':
+        return {
+          startDate: startOfWeek(now, { weekStartsOn: 1 }),
+          endDate: endOfWeek(now, { weekStartsOn: 1 }),
+        };
+      case 'monthly':
+        return { startDate: startOfMonth(now), endDate: endOfMonth(now) };
+      case 'custom': {
+        if (!filters.from || !filters.to) {
+          throw new BadRequestException(
+            'Both "from" and "to" are required for a custom date range',
+          );
+        }
+        const from = new Date(filters.from);
+        const to = new Date(filters.to);
+        if (isNaN(from.getTime()) || isNaN(to.getTime())) {
+          throw new BadRequestException('Invalid "from" or "to" date');
+        }
+        if (from > to) {
+          throw new BadRequestException('"from" date must be before "to" date');
+        }
+        return { startDate: startOfDay(from), endDate: endOfDay(to) };
+      }
+      default:
+        return { startDate: startOfMonth(now), endDate: endOfMonth(now) };
+    }
+  }
+
+  /**
+   * Lead status breakdown per sales officer, scoped to officers created by this admin,
+   * within the given period (daily/weekly/monthly/custom).
+   */
+  async getSalesOfficersPerformance(
+    adminId: string,
+    filters: {
+      period: 'daily' | 'weekly' | 'monthly' | 'custom';
+      from?: string;
+      to?: string;
+    },
+  ) {
+    const admin = await this.getUserDetailsById(adminId);
+    const allowedRoles = ['admin', 'super_admin'];
+    if (!allowedRoles.includes(admin.role?.role_type!)) {
+      throw new UnauthorizedException('User is not an admin');
+    }
+
+    const { startDate, endDate } = this.resolveDateRange(filters);
+
+    // 1. Sales officers created by this admin only
+    const salesOfficers = await this.userModel
+      .find({
+        'created_by.id': adminId,
+        'role.role_type': 'sales_officer',
+      })
+      .select('-password')
+      .sort({ full_name: 1 })
+      .exec();
+
+    if (salesOfficers.length === 0) {
+      return [];
+    }
+
+    const salesOfficerIds = salesOfficers.map((so) => so._id.toString());
+
+    // 2. Aggregate lead counts by assigned officer + status, within the date range
+    const pipeline: PipelineStage[] = [
+      {
+        $match: {
+          'assignedTo.id': { $in: salesOfficerIds },
+          time: { $gte: startDate, $lte: endDate },
+        },
+      },
+      {
+        $group: {
+          _id: { officerId: '$assignedTo.id', status: '$status' },
+          count: { $sum: 1 },
+        },
+      },
+    ];
+
+    const results = await this.leadModel.aggregate(pipeline).exec();
+
+    // 3. Build a lookup of counts per officer, defaulted to zero
+    const statsMap = new Map<
+      string,
+      { pending: number; in_progress: number; completed: number }
+    >();
+    for (const so of salesOfficers) {
+      statsMap.set(so._id.toString(), {
+        pending: 0,
+        in_progress: 0,
+        completed: 0,
+      });
+    }
+    for (const row of results) {
+      const officerId = row._id.officerId;
+      const status = row._id.status as 'pending' | 'in_progress' | 'completed';
+      const entry = statsMap.get(officerId);
+      if (entry && status in entry) {
+        entry[status] = row.count;
+      }
+    }
+
+    // 4. Merge officer details with their stats, ranked by total leads worked
+    return salesOfficers
+      .map((so) => {
+        const stats = statsMap.get(so._id.toString())!;
+        const total = stats.pending + stats.in_progress + stats.completed;
+        return {
+          salesOfficerId: so._id.toString(),
+          full_name: so.full_name,
+          email: so.email,
+          leadCounts: {
+            pending: stats.pending,
+            in_progress: stats.in_progress,
+            completed: stats.completed,
+            total,
+          },
+        };
+      })
+      .sort((a, b) => b.leadCounts.total - a.leadCounts.total);
   }
 }

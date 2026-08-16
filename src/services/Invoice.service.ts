@@ -7,7 +7,11 @@ import { Model } from 'mongoose';
 import { SOLeadService } from './SOLead.service';
 import { UserService } from './User.service';
 import { InvoiceDocument, typedInvoiceSchema } from '../schemas';
-import { CreateInvoiceDto, UpdateInvoiceApprovalDto, UpdateInvoiceDto } from '../DTOs';
+import {
+  CreateInvoiceDto,
+  UpdateInvoiceApprovalDto,
+  UpdateInvoiceDto,
+} from '../DTOs';
 import { DatabaseProvider } from '../provider';
 
 @Injectable()
@@ -21,9 +25,9 @@ export class InvoiceService {
   ) {
     const connection = this.databaseProvider.getConnection();
     this.invoiceModel = connection.model<InvoiceDocument>(
-  'Invoice',
-  typedInvoiceSchema,
-)
+      'Invoice',
+      typedInvoiceSchema,
+    );
     this.soLeadService = new SOLeadService(
       this.databaseProvider,
       this.userService,

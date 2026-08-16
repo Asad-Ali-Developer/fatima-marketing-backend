@@ -101,6 +101,35 @@ export class AdminController {
     };
   }
 
+  @ApiOperation({
+    summary:
+      'Get sales officers performance (lead status breakdown) for officers created by this admin',
+  })
+  @ApiOkResponse({
+    description: 'Sales officers performance retrieved successfully',
+  })
+  @ApiBearerAuth()
+  @UseGuards(JwtCookieAuthGuard)
+  @Get('sales-officers/performance')
+  async getSalesOfficersPerformance(
+    @Req() req,
+    @Query('period') period?: 'daily' | 'weekly' | 'monthly' | 'custom',
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    const adminId = req.user.userId;
+    const data = await this.adminService.getSalesOfficersPerformance(adminId, {
+      period: period ?? 'monthly',
+      from,
+      to,
+    });
+    return {
+      message: 'Sales officers performance retrieved successfully',
+      data,
+      status: true,
+    };
+  }
+
   /**
    * Get a specific sales officer by ID
    */
