@@ -10,6 +10,7 @@ import { DashboardModule } from './Dashboard.module';
 import { SOLeadModule } from './SOLead.module';
 import { AuthModule } from './Auth.module';
 import { AdminInvoiceModule } from './AdminInvoice.module';
+import { HealthModule } from './Health.module';
 
 export {
   UserModule,
@@ -24,4 +25,5 @@ export {
   SOLeadModule,
   AuthModule,
   AdminInvoiceModule,
+  HealthModule,
 };

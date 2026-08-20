@@ -12,6 +12,7 @@ import { AuthService } from './Auth.service';
 import { RateLimitService } from './RateLimit.service';
 // import { RedisService } from './Redis.service';
 import { AdminInvoiceService } from './AdminInvoice.service';
+import { HealthService } from './Health.service';
 
 export {
   UserService,
@@ -28,4 +29,5 @@ export {
   RateLimitService,
   // RedisService,
   AdminInvoiceService,
+  HealthService,
 };

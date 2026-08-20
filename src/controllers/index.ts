@@ -9,6 +9,7 @@ import { ExpenseController } from './Expense.controller';
 import { DashboardController } from './Dashboard.controller';
 import { SOLeadController } from './SOLead.controller';
 import { AdminInvoiceController } from './AdminInvoice.controller';
+import { HealthController } from './Health.controller';
 
 export {
   UserController,
@@ -22,4 +23,5 @@ export {
   DashboardController,
   SOLeadController,
   AdminInvoiceController,
+  HealthController,
 };
