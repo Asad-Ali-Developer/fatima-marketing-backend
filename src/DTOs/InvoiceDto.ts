@@ -8,7 +8,7 @@ import {
   Min,
   IsIn,
 } from 'class-validator';
-import { Lead } from "../schemas"
+import { Lead } from '../schemas';
 
 export class CreateInvoiceDto {
   @IsString()
@@ -45,6 +45,10 @@ export class CreateInvoiceDto {
 
   @IsString()
   @IsOptional()
+  description?: string;
+
+  @IsString()
+  @IsOptional()
   property_type?: string;
 
   @IsDateString()
@@ -72,6 +76,18 @@ export class UpdateInvoiceDto {
   @IsString()
   @IsOptional()
   location?: string;
+
+  @IsString()
+  @IsOptional()
+  quantity?: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsString()
+  @IsOptional()
+  property_type?: string;
 
   @IsNumber()
   @Min(0)

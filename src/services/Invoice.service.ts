@@ -6,7 +6,13 @@ import {
 import { Model } from 'mongoose';
 import { SOLeadService } from './SOLead.service';
 import { UserService } from './User.service';
-import { InvoiceDocument, typedInvoiceSchema } from '../schemas';
+import {
+  InvoiceDocument,
+  LeadDocument,
+  SOLeadDocument,
+  typedInvoiceSchema,
+  leadSchema,
+} from '../schemas';
 import {
   CreateInvoiceDto,
   UpdateInvoiceApprovalDto,
@@ -18,6 +24,7 @@ import { DatabaseProvider } from '../provider';
 export class InvoiceService {
   private invoiceModel: Model<InvoiceDocument>;
   private soLeadService: SOLeadService;
+  private leadModel: Model<LeadDocument>;
 
   constructor(
     private databaseProvider: DatabaseProvider,
@@ -32,14 +39,17 @@ export class InvoiceService {
       this.databaseProvider,
       this.userService,
     );
+    this.leadModel =
+      (connection.models['Lead'] as Model<LeadDocument>) ||
+      connection.model<LeadDocument>('Lead', leadSchema);
   }
 
   async createInvoice(
     userId: string,
     createInvoiceDto: CreateInvoiceDto,
   ): Promise<InvoiceDocument> {
-    console.log('USERID inside the service: ', userId);
-    console.log('Invoice DTO: ', createInvoiceDto);
+    // console.log('USERID inside the service:', userId);
+    // console.log('Invoice DTO:', createInvoiceDto);
 
     if (!createInvoiceDto.customerName || createInvoiceDto.amount == null) {
       throw new BadRequestException('Missing required fields');
@@ -51,16 +61,25 @@ export class InvoiceService {
       throw new NotFoundException('User not found');
     }
 
+    const leadId = createInvoiceDto.generatedByLead?._id;
+
+    // if (!leadId) {
+    //   throw new BadRequestException('Lead ID is required');
+    // }
+
     const invoiceData = {
       ...createInvoiceDto,
+
       date: new Date(createInvoiceDto.date),
+
       created_by: {
         id: userId,
         email: userFound.email,
         name: userFound.full_name,
       },
+
       reported_to: {
-        id: userFound.created_by?.id || userFound._id.toString(), // Fallback to self if no creator
+        id: userFound.created_by?.id || userFound._id.toString(),
         email: userFound.created_by?.email || userFound.email,
         name: userFound.created_by?.name || userFound.full_name,
         admin_approval_status: 'pending',
@@ -69,12 +88,23 @@ export class InvoiceService {
     };
 
     const invoice = new this.invoiceModel(invoiceData);
-    console.log('Invoice before saving: ', invoice);
-    await this.soLeadService.updateInvoiceId(
-      createInvoiceDto.lead_id as string,
-      invoice._id.toString(),
-    );
-    return invoice.save();
+
+    const savedInvoice = await invoice.save();
+
+    // await this.soLeadService.updateInvoiceId(
+    //   leadId,
+    //   savedInvoice._id.toString(),
+    // );
+
+    if (leadId) {
+      await this.leadModel.findByIdAndUpdate(
+        leadId,
+        { invoice_id: savedInvoice._id.toString() },
+        { new: true, runValidators: true },
+      );
+    }
+
+    return savedInvoice;
   }
 
   async findAllByUser(
@@ -332,13 +362,8 @@ export class InvoiceService {
     return invoice.save();
   }
 
-  async deleteInvoice(invoiceId: string, userId: string): Promise<void> {
-    const result = await this.invoiceModel
-      .deleteOne({
-        _id: invoiceId,
-        'created_by.id': userId,
-      })
-      .exec();
+  async deleteInvoice(invoiceId: string, userId: string) {
+    // console.log('Attempting to delete invoice:', invoiceId, 'by user:', userId);
 
     const invoice = await this.invoiceModel.findById(invoiceId).exec();
     if (!invoice) {
@@ -347,17 +372,27 @@ export class InvoiceService {
 
     // Update any leads associated with this invoice ID
     if (invoice.generatedByLead?._id) {
-      await this.soLeadService.updateLeadWhenDeletingInvoice(
-        invoice.generatedByLead._id,
-        invoiceId,
-      );
+      await this.leadModel
+        .findByIdAndUpdate(
+          invoice.generatedByLead._id,
+          { invoice_id: '' },
+          { new: true, runValidators: true },
+        )
+        .exec();
     }
 
-    console.log('Invoice to be deleted: ', invoice);
+    const result = await this.invoiceModel
+      .deleteOne({
+        _id: invoiceId,
+        'created_by.id': userId,
+      })
+      .exec();
 
-    if (result.deletedCount === 0) {
-      throw new NotFoundException('Invoice not found or unauthorized');
-    }
+    // if (result.deletedCount === 0) {
+    //   throw new NotFoundException('Invoice not found or unauthorized');
+    // }
+
+    return result;
   }
 
   async updateInvoiceRemarks(

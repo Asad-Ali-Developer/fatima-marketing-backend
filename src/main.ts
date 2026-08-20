@@ -29,6 +29,9 @@ async function bootstrap() {
     allowedHeaders: allowedHeaders,
   });
 
+  // Set global API prefix
+  app.setGlobalPrefix('api/v1');
+
   // Configure Swagger
   const config = new DocumentBuilder()
     .setTitle('Fatima Marketing APIs')
@@ -45,9 +48,6 @@ async function bootstrap() {
 
   // Apply global validation pipe
   app.useGlobalPipes(new ValidationPipe());
-
-  // Set global API prefix
-  app.setGlobalPrefix('api/v1');
 
   // Apply specific limiters BEFORE global limiter
   // app.use('/api/v1/auth/login', rateLimitService.authenticationLimiter());

@@ -84,6 +84,51 @@ export class SOLeadController {
 
   @ApiBearerAuth()
   @ApiOperation({
+    summary: 'Get paginated leads reported to the current user (admin)',
+  })
+  @UseGuards(JwtCookieAuthGuard)
+  @Get('so-leads-reported-to-me')
+  async getLeadsReportedToMe(
+    @Req() req,
+    @Query('page', ParseIntPipe) page?: number,
+    @Query('limit', ParseIntPipe) limit?: number,
+    @Query('searchTerm') searchTerm?: string,
+    @Query('status') status?: string,
+    @Query('date') date?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+  ) {
+    const userId = req.user.userId;
+
+    const result = await this.soLeadService.getLeadsReportedToAdmin(
+      userId,
+      page ?? 1,
+      limit ?? 10,
+      {
+        searchTerm,
+        status,
+        date,
+        dateFrom,
+        dateTo,
+      },
+    );
+
+    return {
+      message: 'Leads reported to me retrieved successfully',
+      data: result.data,
+      pagination: {
+        total: result.total,
+        page: result.page,
+        totalPages: result.totalPages,
+        hasNextPage: result.hasNextPage,
+        hasPrevPage: result.hasPrevPage,
+      },
+      status: true,
+    };
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({
     summary: 'Get paginated leads assigned to the sales officer',
   })
   @UseGuards(JwtCookieAuthGuard)

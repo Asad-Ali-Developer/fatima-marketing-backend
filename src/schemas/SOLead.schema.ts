@@ -50,6 +50,21 @@ export class SOLead {
     email: string;
     full_name: string;
   };
+
+  @Prop({
+    type: {
+      id: { type: String, required: true },
+      email: { type: String, required: true },
+      full_name: { type: String, required: true },
+    },
+    _id: false, // prevents Mongoose from auto-adding _id to this subdoc
+    required: true,
+  })
+  reportedTo?: {
+    id: string;
+    email: string;
+    full_name: string;
+  };
 }
 
 export const SOLeadSchema = SchemaFactory.createForClass(SOLead);

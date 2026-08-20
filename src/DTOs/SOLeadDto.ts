@@ -55,6 +55,11 @@ export class SOCreateLeadDto {
   @Type(() => CreatedByDto)
   @IsOptional()
   createdBy?: CreatedByDto;
+
+  @ValidateNested()
+  @Type(() => CreatedByDto)
+  @IsOptional()
+  reportedTo?: CreatedByDto;
 }
 
 export class SOUpdateLeadDto extends SOCreateLeadDto {}

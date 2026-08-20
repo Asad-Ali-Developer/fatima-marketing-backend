@@ -1,14 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Schema as MongooseSchema } from 'mongoose';
+import { HydratedDocument, Schema as MongooseSchema, Types } from 'mongoose';
 import { Lead, leadSchema } from './Lead.schema';
 
 export type InvoiceDocument = HydratedDocument<Invoice>;
 
 @Schema({ timestamps: true })
 export class Invoice {
-  @Prop({ type: String })
-  _id: string; // Explicitly define _id for clarity
-
   @Prop({ required: true })
   customerName: string;
 
@@ -31,13 +28,16 @@ export class Invoice {
   quantity?: string;
 
   @Prop()
+  description?: string;
+
+  @Prop()
   lead_id?: string;
 
   @Prop()
   property_type?: string;
 
   @Prop({ required: true, type: Date })
-  date: Date; // Invoice date (not createdAt)
+  date: Date;
 
   @Prop({
     required: true,
@@ -71,7 +71,10 @@ export class Invoice {
         enum: ['pending', 'approved', 'rejected'],
         default: 'pending',
       },
-      approved_at: { type: Date, default: null },
+      approved_at: {
+        type: Date,
+        default: null,
+      },
     },
     _id: false,
     required: true,
@@ -87,15 +90,16 @@ export class Invoice {
   @Prop({ type: leadSchema, _id: false })
   generatedByLead?: Lead;
 
-  @Prop({ type: Date, default: () => new Date() })
-  createdAt?: Date;
+  // Don't manually define _id.
+  // Mongoose automatically creates:
+  // _id: Types.ObjectId
 
-  @Prop({ type: Date, default: () => new Date() })
+  // timestamps: true automatically creates these.
+  createdAt?: Date;
   updatedAt?: Date;
 }
 
 export const InvoiceSchema = SchemaFactory.createForClass(Invoice);
 
-// Re-typed schema so it matches Schema<InvoiceDocument, ...> for connection.model<InvoiceDocument>(...)
 export const typedInvoiceSchema =
   InvoiceSchema as unknown as MongooseSchema<InvoiceDocument>;

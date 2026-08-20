@@ -45,9 +45,20 @@ export class ExpenseController {
     @Query('page', ParseIntPipe) page?: number,
     @Query('limit', ParseIntPipe) limit?: number,
     @Query('searchTerm') searchTerm?: string,
-    @Query('dateFilter') dateFilter?: string, // "all", "today", "yesterday", etc.
+    @Query('dateFilter') dateFilter?: string,
+    @Query('customDateFrom') customDateFrom?: string, // 👈 ADDED
+    @Query('customDateTo') customDateTo?: string, // 👈 ADDED
   ) {
     const userId = req.user.userId;
+
+    // 👇 Parse custom date range if provided in the query string
+    let customDateRange: { from?: Date; to?: Date } = {};
+    if (customDateFrom && customDateTo) {
+      customDateRange = {
+        from: new Date(customDateFrom),
+        to: new Date(customDateTo),
+      };
+    }
 
     const result = await this.expenseService.findAllByUser(
       userId,
@@ -56,6 +67,7 @@ export class ExpenseController {
       {
         searchTerm,
         dateFilter: dateFilter === 'all' ? undefined : dateFilter,
+        customDateRange, // 👈 PASSED TO SERVICE
       },
     );
 
@@ -69,6 +81,24 @@ export class ExpenseController {
         hasNextPage: result.hasNextPage,
         hasPrevPage: result.hasPrevPage,
       },
+      status: true,
+    };
+  }
+
+  @UseGuards(JwtCookieAuthGuard)
+  @Get('stats')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get expense statistics for different time periods',
+  })
+  async getExpenseStats(@Req() req) {
+    const userId = req.user.userId;
+
+    const stats = await this.expenseService.getExpenseStats(userId);
+
+    return {
+      message: 'Expense statistics retrieved successfully',
+      data: stats,
       status: true,
     };
   }

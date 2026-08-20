@@ -127,6 +127,117 @@ export class ExpenseService {
     };
   }
 
+  async getExpenseStats(userId: string) {
+    const now = new Date();
+
+    // Calculate date ranges for each period
+    const todayStart = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
+    todayStart.setHours(0, 0, 0, 0);
+
+    const yesterdayStart = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() - 1,
+    );
+    yesterdayStart.setHours(0, 0, 0, 0);
+    const yesterdayEnd = new Date(yesterdayStart);
+    yesterdayEnd.setHours(23, 59, 59, 999);
+
+    const last7DaysStart = new Date(now);
+    last7DaysStart.setDate(last7DaysStart.getDate() - 7);
+    last7DaysStart.setHours(0, 0, 0, 0);
+
+    const last30DaysStart = new Date(now);
+    last30DaysStart.setDate(last30DaysStart.getDate() - 30);
+    last30DaysStart.setHours(0, 0, 0, 0);
+
+    // Base query with user filter only
+    const baseQuery: any = { 'created_by.id': userId };
+
+    // Parallel aggregation queries for each time period
+    const [todayStats, yesterdayStats, last7DaysStats, last30DaysStats] =
+      await Promise.all([
+        // Today
+        this.expenseModel.aggregate([
+          {
+            $match: {
+              ...baseQuery,
+              createdAt: { $gte: todayStart },
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              totalAmount: { $sum: '$amount' },
+            },
+          },
+        ]),
+
+        // Yesterday
+        this.expenseModel.aggregate([
+          {
+            $match: {
+              ...baseQuery,
+              createdAt: { $gte: yesterdayStart, $lte: yesterdayEnd },
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              totalAmount: { $sum: '$amount' },
+            },
+          },
+        ]),
+
+        // Last 7 Days
+        this.expenseModel.aggregate([
+          {
+            $match: {
+              ...baseQuery,
+              createdAt: { $gte: last7DaysStart },
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              totalAmount: { $sum: '$amount' },
+            },
+          },
+        ]),
+
+        // Last 30 Days
+        this.expenseModel.aggregate([
+          {
+            $match: {
+              ...baseQuery,
+              createdAt: { $gte: last30DaysStart },
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              totalAmount: { $sum: '$amount' },
+            },
+          },
+        ]),
+      ]);
+
+    // Helper to extract total from aggregation result
+    const getTotal = (result: any[]) =>
+      result.length > 0 ? result[0].totalAmount : 0;
+
+    return {
+      today: getTotal(todayStats),
+      yesterday: getTotal(yesterdayStats),
+      last7Days: getTotal(last7DaysStats),
+      last30Days: getTotal(last30DaysStats),
+    };
+  }
+  
   async findByIdAndUser(id: string, userId: string): Promise<ExpenseDocument> {
     const expense = await this.expenseModel
       .findOne({

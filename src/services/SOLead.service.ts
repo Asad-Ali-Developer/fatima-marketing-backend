@@ -103,6 +103,81 @@ export class SOLeadService {
     };
   }
 
+  /**
+   * Fetches all leads reported to a specific admin/user.
+   */
+  async getLeadsReportedToAdmin(
+    userId: string,
+    page: number = 1,
+    limit: number = 10,
+    filters: {
+      searchTerm?: string;
+      status?: string;
+      date?: string;
+      dateFrom?: string;
+      dateTo?: string;
+    } = {},
+  ) {
+    const pageNum = Math.max(1, page);
+    const limitNum = Math.min(100, Math.max(1, limit));
+    const skip = (pageNum - 1) * limitNum;
+
+    // 👇 Core filter: Only get leads where reportedTo.id matches the userId
+    const query: any = { 'reportedTo.id': userId };
+
+    // Status filter
+    if (filters.status && filters.status !== 'all') {
+      query.status = filters.status;
+    }
+
+    // Search by user name or phone
+    if (filters.searchTerm) {
+      const regex = new RegExp(filters.searchTerm, 'i');
+      query.$or = [{ userName: regex }, { phoneNumber: { $regex: regex } }];
+    }
+
+    // Date filter (on `time` field) - supports single date or range
+    if (filters.date) {
+      const targetDate = new Date(filters.date);
+      const start = new Date(targetDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(targetDate);
+      end.setHours(23, 59, 59, 999);
+      query.time = { $gte: start, $lte: end };
+    } else if (filters.dateFrom || filters.dateTo) {
+      query.time = {};
+      if (filters.dateFrom) {
+        const startDate = new Date(filters.dateFrom);
+        startDate.setHours(0, 0, 0, 0);
+        query.time.$gte = startDate;
+      }
+      if (filters.dateTo) {
+        const endDate = new Date(filters.dateTo);
+        endDate.setHours(23, 59, 59, 999);
+        query.time.$lte = endDate;
+      }
+    }
+
+    const total = await this.leadModel.countDocuments(query).exec();
+    const data = await this.leadModel
+      .find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum)
+      .exec();
+
+    const totalPages = Math.ceil(total / limitNum);
+
+    return {
+      data,
+      total,
+      page: pageNum,
+      totalPages,
+      hasNextPage: pageNum < totalPages,
+      hasPrevPage: pageNum > 1,
+    };
+  }
+
   async findAllLeadsForSO(
     page: number = 1,
     limit: number = 10,
@@ -365,7 +440,7 @@ export class SOLeadService {
     const lead = await this.leadModel
       .findByIdAndUpdate(
         leadId,
-        { invoice_id: "" },
+        { invoice_id: '' },
         { new: true, runValidators: true },
       )
       .exec();
